@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>새 게시물 작성 | 인테리어꿀팁</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic",
+          sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f8f9fa;
+      }
+      header {
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #2c3e50;
+        text-decoration: none;
+      }
+      .logo span {
+        color: #3498db;
+      }
+      nav ul {
+        list-style: none;
+        display: flex;
+        gap: 2rem;
+      }
+      nav a {
+        text-decoration: none;
+        color: #555;
+        font-weight: 500;
+      }
+      .container {
+        max-width: 900px;
+        margin: 3rem auto;
+        background: white;
+        padding: 3rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: #2c3e50;
+      }
+      .form-group {
+        margin-bottom: 2rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+      }
+      input[type="text"],
+      input[type="date"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: inherit;
+      }
+      textarea {
+        min-height: 400px;
+        line-height: 1.8;
+      }
+      .help-text {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+      }
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      button {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .btn-primary {
+        background: #3498db;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #2980b9;
+      }
+      .btn-secondary {
+        background: #95a5a6;
+        color: white;
+      }
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+      .preview {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: none;
+      }
+      .preview h2 {
+        margin-bottom: 1rem;
+        color: #2c3e50;
+      }
+      .preview-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 6px;
+      }
+      footer {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 3rem 2rem;
+        margin-top: 4rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-container">
+        <a href="/" class="logo">인테리어<span>꿀팁</span></a>
+        <nav>
+          <ul>
+            <li><a href="/">홈</a></li>
+            <li><a href="/#posts">게시물</a></li>
+            <li><a href="/about.html">소개</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <h1>새 게시물 작성</h1>
+
+      <form id="postForm">
+        <div class="form-group">
+          <label for="title">제목 *</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            required
+            placeholder="예: 작은 집을 넓어 보이게 하는 10가지 인테리어 비법"
+          />
+          <div class="help-text">
+            검색 최적화를 위해 구체적이고 명확한 제목을 작성하세요.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="category">카테고리 *</label>
+          <select id="category" name="category" required>
+            <option value="">선택하세요</option>
+            <option value="공간활용">공간활용</option>
+            <option value="조명">조명</option>
+            <option value="컬러">컬러</option>
+            <option value="가구배치">가구배치</option>
+            <option value="DIY">DIY</option>
+            <option value="수납">수납</option>
+            <option value="주방">주방</option>
+            <option value="욕실">욕실</option>
+            <option value="식물">식물</option>
+            <option value="예산관리">예산관리</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="date">작성일 *</label>
+          <input type="date" id="date" name="date" required />
+        </div>
+
+        <div class="form-group">
+          <label for="description">요약 설명 (Meta Description) *</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="3"
+            required
+            placeholder="이 게시물의 내용을 150-160자로 요약하세요. 검색 결과에 표시됩니다."
+          ></textarea>
+          <div class="help-text">
+            150-160자 권장. 현재: <span id="descCount">0</span>자
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="content">본문 내용 *</label>
+          <textarea
+            id="content"
+            name="content"
+            required
+            placeholder="HTML 형식으로 작성하세요.
+
+예시:
+<h2>섹션 제목</h2>
+<p>본문 내용...</p>
+
+<h3>소제목</h3>
+<p>설명...</p>
+
+<ul>
+  <li>항목 1</li>
+  <li>항목 2</li>
+</ul>
+
+<div class='tip-box'>
+  <strong>💡 팁:</strong> 유용한 정보를 공유하세요.
+</div>"
+          ></textarea>
+          <div class="help-text">
+            최소 2,000자 이상 작성을 권장합니다. 현재:
+            <span id="contentCount">0</span>자
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="previewPost()">
+            미리보기
+          </button>
+          <button type="button" class="btn-primary" onclick="generateHTML()">
+            HTML 생성
+          </button>
+        </div>
+      </form>
+
+      <div class="preview" id="preview">
+        <h2>미리보기</h2>
+        <div class="preview-content" id="previewContent"></div>
+      </div>
+
+      <div
+        class="form-group"
+        id="outputSection"
+        style="display: none; margin-top: 3rem"
+      >
+        <label for="output">생성된 HTML 코드</label>
+        <textarea
+          id="output"
+          rows="20"
+          readonly
+          style="font-family: monospace; font-size: 0.9rem"
+        ></textarea>
+        <div class="help-text">
+          이 코드를 복사하여 /posts/파일명.html로 저장하세요.
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2024 인테리어꿀팁. All rights reserved.</p>
+    </footer>
+
+    <script>
+      // 글자 수 카운터
+      document
+        .getElementById("description")
+        .addEventListener("input", function () {
+          document.getElementById("descCount").textContent = this.value.length;
+        });
+
+      document.getElementById("content").addEventListener("input", function () {
+        document.getElementById("contentCount").textContent = this.value.length;
+      });
+
+      // 미리보기 함수
+      function previewPost() {
+        const title = document.getElementById("title").value;
+        const content = document.getElementById("content").value;
+        const category = document.getElementById("category").value;
+
+        if (!title || !content) {
+          alert("제목과 본문을 입력해주세요.");
+          return;
+        }
+
+        const previewHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <span style="display: inline-block; background: #e3f2fd; color: #1976d2; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">${category}</span>
+                </div>
+                <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #2c3e50;">${title}</h1>
+                <div style="color: #999; font-size: 0.9rem; margin-bottom: 2rem;">작성일: ${document.getElementById("date").value}</div>
+                <div style="line-height: 1.8;">${content}</div>
+            `;
+
+        document.getElementById("previewContent").innerHTML = previewHTML;
+        document.getElementById("preview").style.display = "block";
+        document
+          .getElementById("preview")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      // HTML 생성 함수
+      function generateHTML() {
+        const title = document.getElementById("title").value;
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+        const description = document.getElementById("description").value;
+        const content = document.getElementById("content").value;
+
+        if (!title || !category || !date || !description || !content) {
+          alert("모든 필수 항목을 입력해주세요.");
+          return;
+        }
+
+        if (content.length < 2000) {
+          if (!confirm("본문이 2,000자 미만입니다. 계속하시겠습니까?")) {
+            return;
+          }
+        }
+
+        const categoryColors = {
+          공간활용: { bg: "#e3f2fd", color: "#1976d2" },
+          조명: { bg: "#fff3e0", color: "#f57c00" },
+          컬러: { bg: "#fce4ec", color: "#c2185b" },
+          가구배치: { bg: "#e8f5e9", color: "#2e7d32" },
+          DIY: { bg: "#e1f5fe", color: "#0277bd" },
+          수납: { bg: "#fff3e0", color: "#e65100" },
+          주방: { bg: "#f3e5f5", color: "#6a1b9a" },
+          욕실: { bg: "#e0f2f1", color: "#00695c" },
+          식물: { bg: "#e8f5e9", color: "#2e7d32" },
+          예산관리: { bg: "#fff9c4", color: "#f57f17" },
+        };
+
+        const catStyle = categoryColors[category] || {
+          bg: "#e3f2fd",
+          color: "#1976d2",
+        };
+
+        const filename = title
+          .toLowerCase()
+          .replace(/[^가-힣a-z0-9\s]/g, "")
+          .replace(/\s+/g, "-")
+          .substring(0, 50);
+
+        const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} | 인테리어꿀팁</title>
+    <meta name="description" content="${description}">
+    <link rel="canonical" href="https://yourdomain.com/posts/${filename}.html">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; background: #f8f9fa; }
+        header { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .header-container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8rem; font-weight: 800; color: #2c3e50; text-decoration: none; }
+        .logo span { color: #3498db; }
+        nav ul { list-style: none; display: flex; gap: 2rem; }
+        nav a { text-decoration: none; color: #555; font-weight: 500; }
+        article { max-width: 800px; margin: 3rem auto; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .post-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #f0f0f0; }
+        .post-category { display: inline-block; background: ${catStyle.bg}; color: ${catStyle.color}; padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+        h1 { font-size: 2.5rem; line-height: 1.3; margin-bottom: 1rem; color: #2c3e50; }
+        .post-meta { color: #999; font-size: 0.95rem; }
+        .post-content h2 { font-size: 1.8rem; margin: 2.5rem 0 1.2rem; color: #2c3e50; }
+        .post-content h3 { font-size: 1.4rem; margin: 2rem 0 1rem; color: #34495e; }
+        .post-content p { margin-bottom: 1.5rem; line-height: 1.9; }
+        .post-content ul, .post-content ol { margin: 1.5rem 0 1.5rem 2rem; }
+        .post-content li { margin-bottom: 0.8rem; line-height: 1.8; }
+        .post-content strong { color: #2c3e50; font-weight: 700; }
+        .tip-box { background: #f0f7ff; border-left: 4px solid #3498db; padding: 1.5rem; margin: 2rem 0; border-radius: 4px; }
+        footer { background: #2c3e50; color: #ecf0f1; padding: 3rem 2rem; margin-top: 4rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="/" class="logo">인테리어<span>꿀팁</span></a>
+            <nav><ul><li><a href="/">홈</a></li><li><a href="/#posts">게시물</a></li><li><a href="/about.html">소개</a></li></ul></nav>
+        </div>
+    </header>
+    <article>
+        <div class="post-header">
+            <span class="post-category">${category}</span>
+            <h1>${title}</h1>
+            <div class="post-meta">${date} · 읽기</div>
+        </div>
+        <div class="post-content">
+            ${content}
+        </div>
+    </article>
+    <footer><p>&copy; 2024 인테리어꿀팁. All rights reserved.</p></footer>
+</body>
+</html>`;
+
+        document.getElementById("output").value = html;
+        document.getElementById("outputSection").style.display = "block";
+        document
+          .getElementById("outputSection")
+          .scrollIntoView({ behavior: "smooth" });
+
+        alert(
+          `HTML이 생성되었습니다!\\n\\n권장 파일명: ${filename}.html\\n\\n코드를 복사하여 /posts/ 폴더에 저장하세요.`,
+        );
+      }
+
+      // 오늘 날짜를 기본값으로 설정
+      document.getElementById("date").valueAsDate = new Date();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>블로그 관리자 | 인테리어꿀팁</title>
+    <!-- Quill Editor CSS -->
+    <link
+      href="https://cdn.quilljs.com/1.3.6/quill.snow.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic",
+          sans-serif;
+        background: #f8f9fa;
+      }
+
+      header {
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #2c3e50;
+        text-decoration: none;
+      }
+      .logo span {
+        color: #3498db;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+      }
+      .editor-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 2rem;
+      }
+
+      .main-editor {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      }
+      .sidebar {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        color: #2c3e50;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+        font-size: 0.95rem;
+      }
+      input[type="text"],
+      input[type="date"],
+      select {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+      }
+      textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        resize: vertical;
+      }
+
+      #editor {
+        min-height: 500px;
+        background: white;
+      }
+      .ql-editor {
+        min-height: 500px;
+        font-size: 1.05rem;
+        line-height: 1.8;
+      }
+
+      .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.5rem;
+      }
+      .char-count {
+        font-weight: 600;
+        color: #3498db;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+      button {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .btn-primary {
+        background: #3498db;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+      }
+      .btn-success {
+        background: #27ae60;
+        color: white;
+      }
+      .btn-success:hover {
+        background: #229954;
+        transform: translateY(-2px);
+      }
+      .btn-secondary {
+        background: #95a5a6;
+        color: white;
+      }
+      .btn-secondary:hover {
+        background: #7f8c8d;
+      }
+
+      .image-upload {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .image-upload:hover {
+        border-color: #3498db;
+        background: #f8f9fa;
+      }
+      .image-upload input {
+        display: none;
+      }
+
+      .uploaded-images {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .image-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 1;
+      }
+      .image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .image-item button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(231, 76, 60, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .preview-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: none;
+      }
+      .preview-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 6px;
+      }
+
+      .post-list {
+        margin-top: 2rem;
+      }
+      .post-item {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .post-item:hover {
+        background: #f8f9fa;
+      }
+      .post-item-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+      }
+      .post-item-meta {
+        font-size: 0.85rem;
+        color: #999;
+      }
+
+      .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+      }
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      @media (max-width: 1024px) {
+        .editor-wrapper {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-container">
+        <a href="/" class="logo"
+          >인테리어<span>꿀팁</span>
+          <small style="font-size: 0.6em; color: #95a5a6">관리자</small></a
+        >
+        <nav>
+          <button onclick="window.location.href = '/'" class="btn-secondary">
+            사이트 보기
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <div id="alertContainer"></div>
+
+      <div class="editor-wrapper">
+        <div class="main-editor">
+          <h1>✍️ 새 게시물 작성</h1>
+
+          <form id="postForm">
+            <div class="form-group">
+              <label for="title">제목 *</label>
+              <input
+                type="text"
+                id="title"
+                required
+                placeholder="예: 작은 집을 넓어 보이게 하는 10가지 인테리어 비법"
+              />
+              <div class="help-text">
+                검색 최적화를 위해 구체적이고 명확한 제목을 작성하세요.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">요약 설명 (Meta Description) *</label>
+              <textarea
+                id="description"
+                rows="3"
+                required
+                placeholder="이 게시물의 내용을 150-160자로 요약하세요."
+              ></textarea>
+              <div class="help-text">
+                150-160자 권장. 현재:
+                <span class="char-count" id="descCount">0</span>자
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>본문 내용 *</label>
+              <div id="editor"></div>
+              <div class="help-text">
+                최소 2,000자 이상 작성을 권장합니다. 현재:
+                <span class="char-count" id="contentCount">0</span>자
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>이미지 업로드</label>
+              <div
+                class="image-upload"
+                onclick="document.getElementById('imageInput').click()"
+              >
+                <input type="file" id="imageInput" accept="image/*" multiple />
+                <p>📷 클릭하여 이미지 업로드</p>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem">
+                  또는 에디터에 직접 드래그 앤 드롭
+                </p>
+              </div>
+              <div class="uploaded-images" id="uploadedImages"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="sidebar">
+          <h2>게시물 설정</h2>
+
+          <div class="form-group">
+            <label for="category">카테고리 *</label>
+            <select id="category" required>
+              <option value="">선택하세요</option>
+              <option value="공간활용">공간활용</option>
+              <option value="조명">조명</option>
+              <option value="컬러">컬러</option>
+              <option value="가구배치">가구배치</option>
+              <option value="DIY">DIY</option>
+              <option value="수납">수납</option>
+              <option value="주방">주방</option>
+              <option value="욕실">욕실</option>
+              <option value="식물">식물</option>
+              <option value="예산관리">예산관리</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="date">작성일 *</label>
+            <input type="date" id="date" required />
+          </div>
+
+          <div class="button-group" style="flex-direction: column">
+            <button type="button" class="btn-success" onclick="savePost()">
+              💾 저장하기
+            </button>
+            <button type="button" class="btn-primary" onclick="downloadHTML()">
+              ⬇️ HTML 다운로드
+            </button>
+            <button type="button" class="btn-secondary" onclick="previewPost()">
+              👁️ 미리보기
+            </button>
+          </div>
+
+          <div class="post-list" style="margin-top: 2rem">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem">
+              저장된 게시물
+            </h3>
+            <div id="savedPosts"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-section" id="previewSection">
+        <h2>미리보기</h2>
+        <div class="preview-content" id="previewContent"></div>
+      </div>
+    </div>
+
+    <!-- Quill Editor JS -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+      // Quill 에디터 초기화
+      const quill = new Quill("#editor", {
+        theme: "snow",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ["bold", "italic", "underline", "strike"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            [{ align: [] }],
+            [{ color: [] }, { background: [] }],
+            ["link", "image"],
+            ["blockquote", "code-block"],
+            ["clean"],
+          ],
+        },
+        placeholder:
+          "여기에 본문 내용을 작성하세요...\n\n팁: 이미지를 드래그 앤 드롭하거나 툴바의 이미지 버튼을 사용하세요.",
+      });
+
+      // 글자 수 카운터
+      document
+        .getElementById("description")
+        .addEventListener("input", function () {
+          document.getElementById("descCount").textContent = this.value.length;
+        });
+
+      quill.on("text-change", function () {
+        const text = quill.getText();
+        document.getElementById("contentCount").textContent = text.length;
+      });
+
+      // 이미지 업로드 처리
+      document
+        .getElementById("imageInput")
+        .addEventListener("change", function (e) {
+          const files = e.target.files;
+          handleImageUpload(files);
+        });
+
+      function handleImageUpload(files) {
+        const container = document.getElementById("uploadedImages");
+
+        Array.from(files).forEach((file) => {
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const imageData = e.target.result;
+
+              // 에디터에 이미지 삽입
+              const range = quill.getSelection() || {
+                index: quill.getLength(),
+              };
+              quill.insertEmbed(range.index, "image", imageData);
+
+              // 썸네일 표시
+              const div = document.createElement("div");
+              div.className = "image-item";
+              div.innerHTML = `
+                            <img src="${imageData}" alt="Uploaded">
+                            <button onclick="this.parentElement.remove()">×</button>
+                        `;
+              container.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+
+      // 오늘 날짜 기본값
+      document.getElementById("date").valueAsDate = new Date();
+
+      // 게시물 저장
+      function savePost() {
+        const title = document.getElementById("title").value;
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+        const description = document.getElementById("description").value;
+        const content = quill.root.innerHTML;
+
+        if (!title || !category || !date || !description || !content) {
+          showAlert("모든 필수 항목을 입력해주세요.", "error");
+          return;
+        }
+
+        const post = {
+          id: Date.now(),
+          title,
+          category,
+          date,
+          description,
+          content,
+          createdAt: new Date().toISOString(),
+        };
+
+        // LocalStorage에 저장
+        let posts = JSON.parse(localStorage.getItem("blogPosts") || "[]");
+        posts.unshift(post);
+        localStorage.setItem("blogPosts", JSON.stringify(posts));
+
+        showAlert("게시물이 저장되었습니다! 💾", "success");
+        loadSavedPosts();
+
+        // 폼 초기화 여부 확인
+        if (confirm("새 게시물을 작성하시겠습니까?")) {
+          resetForm();
+        }
+      }
+
+      // HTML 다운로드
+      function downloadHTML() {
+        const title = document.getElementById("title").value;
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+        const description = document.getElementById("description").value;
+        const content = quill.root.innerHTML;
+
+        if (!title || !category || !date || !description || !content) {
+          showAlert("모든 필수 항목을 입력해주세요.", "error");
+          return;
+        }
+
+        const html = generateHTML(title, category, date, description, content);
+        const filename = generateFilename(title);
+
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showAlert(`HTML 파일이 다운로드되었습니다: ${filename}`, "success");
+      }
+
+      // HTML 생성
+      function generateHTML(title, category, date, description, content) {
+        const categoryColors = {
+          공간활용: { bg: "#e3f2fd", color: "#1976d2" },
+          조명: { bg: "#fff3e0", color: "#f57c00" },
+          컬러: { bg: "#fce4ec", color: "#c2185b" },
+          가구배치: { bg: "#e8f5e9", color: "#2e7d32" },
+          DIY: { bg: "#e1f5fe", color: "#0277bd" },
+          수납: { bg: "#fff3e0", color: "#e65100" },
+          주방: { bg: "#f3e5f5", color: "#6a1b9a" },
+          욕실: { bg: "#e0f2f1", color: "#00695c" },
+          식물: { bg: "#e8f5e9", color: "#2e7d32" },
+          예산관리: { bg: "#fff9c4", color: "#f57f17" },
+        };
+
+        const catStyle = categoryColors[category] || {
+          bg: "#e3f2fd",
+          color: "#1976d2",
+        };
+
+        return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} | 인테리어꿀팁</title>
+    <meta name="description" content="${description}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; line-height: 1.8; color: #333; background: #f8f9fa; }
+        header { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .header-container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8rem; font-weight: 800; color: #2c3e50; text-decoration: none; }
+        .logo span { color: #3498db; }
+        nav ul { list-style: none; display: flex; gap: 2rem; }
+        nav a { text-decoration: none; color: #555; font-weight: 500; }
+        article { max-width: 800px; margin: 3rem auto; background: white; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .post-header { margin-bottom: 3rem; padding-bottom: 2rem; border-bottom: 2px solid #f0f0f0; }
+        .post-category { display: inline-block; background: ${catStyle.bg}; color: ${catStyle.color}; padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+        h1 { font-size: 2.5rem; line-height: 1.3; margin-bottom: 1rem; color: #2c3e50; }
+        .post-meta { color: #999; font-size: 0.95rem; }
+        .post-content { line-height: 1.9; }
+        .post-content h2 { font-size: 1.8rem; margin: 2.5rem 0 1.2rem; color: #2c3e50; }
+        .post-content h3 { font-size: 1.4rem; margin: 2rem 0 1rem; color: #34495e; }
+        .post-content p { margin-bottom: 1.5rem; }
+        .post-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 2rem 0; }
+        .post-content ul, .post-content ol { margin: 1.5rem 0 1.5rem 2rem; }
+        .post-content li { margin-bottom: 0.8rem; }
+        .post-content strong { color: #2c3e50; font-weight: 700; }
+        .post-content blockquote { border-left: 4px solid #3498db; padding-left: 1.5rem; margin: 2rem 0; color: #666; font-style: italic; }
+        footer { background: #2c3e50; color: #ecf0f1; padding: 3rem 2rem; margin-top: 4rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="/" class="logo">인테리어<span>꿀팁</span></a>
+            <nav><ul><li><a href="/">홈</a></li><li><a href="/#posts">게시물</a></li><li><a href="/about.html">소개</a></li></ul></nav>
+        </div>
+    </header>
+    <article>
+        <div class="post-header">
+            <span class="post-category">${category}</span>
+            <h1>${title}</h1>
+            <div class="post-meta">${date}</div>
+        </div>
+        <div class="post-content">
+            ${content}
+        </div>
+    </article>
+    <footer><p>&copy; 2024 인테리어꿀팁. All rights reserved.</p></footer>
+</body>
+</html>`;
+      }
+
+      // 파일명 생성
+      function generateFilename(title) {
+        return (
+          title
+            .toLowerCase()
+            .replace(/[^가-힣a-z0-9\s]/g, "")
+            .replace(/\s+/g, "-")
+            .substring(0, 50) + ".html"
+        );
+      }
+
+      // 미리보기
+      function previewPost() {
+        const title = document.getElementById("title").value;
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+        const content = quill.root.innerHTML;
+
+        if (!title || !content) {
+          showAlert("제목과 본문을 입력해주세요.", "error");
+          return;
+        }
+
+        const previewHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <span style="display: inline-block; background: #e3f2fd; color: #1976d2; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">${category}</span>
+                </div>
+                <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #2c3e50;">${title}</h1>
+                <div style="color: #999; font-size: 0.9rem; margin-bottom: 2rem;">작성일: ${date}</div>
+                <div style="line-height: 1.8;">${content}</div>
+            `;
+
+        document.getElementById("previewContent").innerHTML = previewHTML;
+        document.getElementById("previewSection").style.display = "block";
+        document
+          .getElementById("previewSection")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      // 저장된 게시물 로드
+      function loadSavedPosts() {
+        const posts = JSON.parse(localStorage.getItem("blogPosts") || "[]");
+        const container = document.getElementById("savedPosts");
+
+        if (posts.length === 0) {
+          container.innerHTML =
+            '<p style="color: #999; font-size: 0.9rem;">저장된 게시물이 없습니다.</p>';
+          return;
+        }
+
+        container.innerHTML = posts
+          .map(
+            (post) => `
+                <div class="post-item" onclick="loadPost(${post.id})">
+                    <div class="post-item-title">${post.title}</div>
+                    <div class="post-item-meta">${post.category} · ${post.date}</div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      // 게시물 불러오기
+      function loadPost(id) {
+        const posts = JSON.parse(localStorage.getItem("blogPosts") || "[]");
+        const post = posts.find((p) => p.id === id);
+
+        if (post) {
+          document.getElementById("title").value = post.title;
+          document.getElementById("category").value = post.category;
+          document.getElementById("date").value = post.date;
+          document.getElementById("description").value = post.description;
+          quill.root.innerHTML = post.content;
+
+          showAlert("게시물을 불러왔습니다.", "success");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+
+      // 폼 초기화
+      function resetForm() {
+        document.getElementById("title").value = "";
+        document.getElementById("category").value = "";
+        document.getElementById("date").valueAsDate = new Date();
+        document.getElementById("description").value = "";
+        quill.setText("");
+        document.getElementById("uploadedImages").innerHTML = "";
+      }
+
+      // 알림 표시
+      function showAlert(message, type) {
+        const container = document.getElementById("alertContainer");
+        const alert = document.createElement("div");
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        container.appendChild(alert);
+
+        setTimeout(() => alert.remove(), 5000);
+      }
+
+      // 페이지 로드 시 저장된 게시물 로드
+      loadSavedPosts();
+    </script>
+  </body>
+</html>
