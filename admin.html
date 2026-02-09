@@ -270,14 +270,23 @@
         border: 1px solid #f5c6cb;
       }
 
-      @media (max-width: 1024px) {
-        .editor-wrapper {
-          grid-template-columns: 1fr;
+        /* Tip Box Style */
+        .tip-box {
+            background: #fff8e1;
+            border-left: 5px solid #ff9800;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+            font-size: 1rem;
+            color: #333;
         }
-        .sidebar {
-          position: static;
+        .tip-box strong { color: #e65100; font-weight: 700; }
+
+        /* Quill Editor Tip Box Button */
+        .ql-tipBox:after {
+            content: "💡";
+            font-size: 1.2rem;
         }
-      }
     </style>
   </head>
   <body>
@@ -298,11 +307,10 @@
     <div class="container">
       <div id="alertContainer"></div>
 
-      <div class="editor-wrapper">
+      <form class="editor-wrapper" id="postForm">
         <div class="main-editor">
           <h1>✍️ 새 게시물 작성</h1>
 
-          <form id="postForm">
             <div class="form-group">
               <label for="title">제목 *</label>
               <input
@@ -332,6 +340,47 @@
 
             <div class="form-group">
               <label>본문 내용 *</label>
+              <!-- Custom Toolbar Container -->
+              <div id="toolbar-container">
+                  <span class="ql-formats">
+                      <select class="ql-header">
+                          <option value="1">Heading 1</option>
+                          <option value="2">Heading 2</option>
+                          <option value="3">Heading 3</option>
+                          <option selected>Normal</option>
+                      </select>
+                  </span>
+                  <span class="ql-formats">
+                      <button class="ql-bold"></button>
+                      <button class="ql-italic"></button>
+                      <button class="ql-underline"></button>
+                      <button class="ql-strike"></button>
+                  </span>
+                  <span class="ql-formats">
+                      <button class="ql-list" value="ordered"></button>
+                      <button class="ql-list" value="bullet"></button>
+                  </span>
+                  <span class="ql-formats">
+                      <select class="ql-align"></select>
+                  </span>
+                  <span class="ql-formats">
+                      <select class="ql-color"></select>
+                      <select class="ql-background"></select>
+                  </span>
+                  <span class="ql-formats">
+                      <button class="ql-link"></button>
+                      <button class="ql-image"></button>
+                  </span>
+                  <span class="ql-formats">
+                      <button class="ql-blockquote"></button>
+                      <button class="ql-code-block"></button>
+                      <!-- Custom Tip Box Button -->
+                      <button class="ql-tipBox" title="전문가 팁 박스 추가"></button>
+                  </span>
+                  <span class="ql-formats">
+                      <button class="ql-clean"></button>
+                  </span>
+              </div>
               <div id="editor"></div>
               <div class="help-text">
                 최소 2,000자 이상 작성을 권장합니다. 현재:
@@ -429,6 +478,20 @@
         placeholder:
           "여기에 본문 내용을 작성하세요...\n\n팁: 이미지를 드래그 앤 드롭하거나 툴바의 이미지 버튼을 사용하세요.",
       });
+
+      // Custom Handler for Tip Box
+      setTimeout(function() {
+        const tipBoxButton = document.querySelector('.ql-tipBox');
+        if (tipBoxButton) {
+            tipBoxButton.addEventListener('click', function() {
+                const range = quill.getSelection(true);
+                if (range) {
+                    const tipBoxHTML = '<div class="tip-box"><strong>💡 전문가 팁:</strong> 여기에 팁 내용을 입력하세요.</div><p><br></p>';
+                    quill.clipboard.dangerouslyPasteHTML(range.index, tipBoxHTML);
+                }
+            });
+        }
+      }, 500);
 
       // 글자 수 카운터
       document
@@ -596,6 +659,8 @@
         .post-content li { margin-bottom: 0.8rem; }
         .post-content strong { color: #2c3e50; font-weight: 700; }
         .post-content blockquote { border-left: 4px solid #3498db; padding-left: 1.5rem; margin: 2rem 0; color: #666; font-style: italic; }
+        .tip-box { background: #fff8e1; border-left: 5px solid #ff9800; padding: 1.5rem; margin: 2rem 0; border-radius: 4px; font-size: 1rem; color: #333; }
+        .tip-box strong { color: #e65100; font-weight: 700; }
         footer { background: #2c3e50; color: #ecf0f1; padding: 3rem 2rem; margin-top: 4rem; text-align: center; }
     </style>
 </head>
@@ -616,7 +681,7 @@
             ${content}
         </div>
     </article>
-    <footer><p>&copy; 2024 인테리어꿀팁. All rights reserved.</p></footer>
+    <footer><p>&copy; 2026 인테리어꿀팁. All rights reserved.</p></footer>
 </body>
 </html>`;
       }
