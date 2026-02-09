@@ -287,9 +287,77 @@
             content: "💡";
             font-size: 1.2rem;
         }
+
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #2c3e50;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .login-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-box h2 { color: #2c3e50; margin-bottom: 1.5rem; font-size: 1.8rem; }
+        .login-box p { color: #666; margin-bottom: 2rem; font-size: 0.95rem; }
+        .login-input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .login-input:focus { border-color: #3498db; outline: none; }
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-btn:hover { background: #2980b9; }
+        .login-error {
+            color: #e74c3c;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="margin: 0 0 1rem 0;">🔒 관리자 로그인</h2>
+            <p>게시물을 작성하려면 로그인이 필요합니다.</p>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <input type="text" id="adminId" class="login-input" placeholder="아이디" required autocomplete="username">
+                <input type="password" id="adminPw" class="login-input" placeholder="비밀번호" required autocomplete="current-password">
+                <button type="submit" class="login-btn">로그인</button>
+                <div id="loginError" class="login-error">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+            </form>
+            <button onclick="window.location.href='/'" style="background:none; border:none; color:#999; margin-top:1.5rem; cursor:pointer; text-decoration:underline;">홈으로 돌아가기</button>
+        </div>
+    </div>
     <header>
       <div class="header-container">
         <a href="/" class="logo"
@@ -460,6 +528,75 @@
     <!-- Quill Editor JS -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script>
+        // Authentication Logic
+        function checkLogin() {
+            const token = sessionStorage.getItem('admin_auth');
+            const overlay = document.getElementById('login-overlay');
+            if (token === 'logged_in_verified') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'flex';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const id = document.getElementById('adminId').value;
+            const pw = document.getElementById('adminPw').value;
+            const errorMsg = document.getElementById('loginError');
+
+            // 1. Localhost Dev Mode: Use basic check (API won't work without `vercel dev`)
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                if (id === 'admin' && pw === 'intip2026!') {
+                    loginSuccess();
+                } else {
+                    showLoginError();
+                }
+                return;
+            }
+
+            // 2. Production Mode: Call Vercel/Cloudflare Function API (Secure)
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, pw })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    loginSuccess();
+                } else {
+                    showLoginError();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                // Fallback if API fails (e.g. static hosting only)
+                if (id === 'admin' && pw === 'intip2026!') {
+                    loginSuccess();
+                } else {
+                    showLoginError();
+                }
+            }
+        }
+
+        function loginSuccess() {
+            sessionStorage.setItem('admin_auth', 'logged_in_verified');
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('loginError').style.display = 'none';
+            showAlert('로그인되었습니다! 👋', 'success');
+        }
+
+        function showLoginError() {
+            const errorMsg = document.getElementById('loginError');
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+        }
+
+        // Check login on load
+        checkLogin();
+
       // Quill 에디터 초기화
       const quill = new Quill("#editor", {
         theme: "snow",
