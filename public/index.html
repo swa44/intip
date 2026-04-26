@@ -94,6 +94,15 @@
         padding: 24px;
       }
 
+      .boot {
+        display: grid;
+        place-items: center;
+        min-height: 78vh;
+        padding: 24px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
       .login-panel,
       .panel {
         background: var(--panel);
@@ -455,7 +464,9 @@
     </style>
   </head>
   <body>
-    <main id="loginView" class="login">
+    <main id="bootView" class="boot">확인 중</main>
+
+    <main id="loginView" class="login hidden">
       <form class="login-panel" id="loginForm">
         <h1>intip</h1>
         <p>비밀번호로 들어가는 개인 공간입니다.</p>
@@ -611,11 +622,13 @@
       }
 
       function showLogin() {
+        $("bootView").classList.add("hidden");
         $("loginView").classList.remove("hidden");
         $("appView").style.display = "none";
       }
 
       function showApp() {
+        $("bootView").classList.add("hidden");
         $("loginView").classList.add("hidden");
         $("appView").style.display = "block";
       }
@@ -849,10 +862,15 @@
           }),
         });
 
-        const upload = await fetch(signed.uploadUrl, {
-          method: "PUT",
-          body: file,
-        });
+        let upload;
+        try {
+          upload = await fetch(signed.uploadUrl, {
+            method: "PUT",
+            body: file,
+          });
+        } catch {
+          throw new Error(`R2 CORS에 ${window.location.origin} 주소를 추가하세요.`);
+        }
         if (!upload.ok) throw new Error("R2 업로드에 실패했습니다. R2 CORS 설정을 확인하세요.");
 
         const data = await api("/api/files", {
