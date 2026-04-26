@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>intip</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f3ee;
+        --panel: #ffffff;
+        --ink: #202124;
+        --muted: #74706a;
+        --line: #dfdbd2;
+        --accent: #156c5f;
+        --accent-2: #d84f31;
+        --soft: #e9f3ef;
+        --shadow: 0 18px 50px rgba(39, 35, 28, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        color: var(--ink);
+        background:
+          linear-gradient(180deg, rgba(21, 108, 95, 0.08), transparent 360px),
+          var(--bg);
+        min-height: 100vh;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(28px, 5vw, 46px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .login {
+        display: grid;
+        place-items: center;
+        min-height: 72vh;
+      }
+
+      .login-panel {
+        width: min(420px, 100%);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 28px;
+      }
+
+      .login-panel h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+        letter-spacing: 0;
+      }
+
+      .login-panel p {
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      label {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
+      }
+
+      input {
+        min-height: 46px;
+        padding: 0 13px;
+      }
+
+      textarea {
+        min-height: 300px;
+        padding: 14px;
+        line-height: 1.65;
+        resize: vertical;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(21, 108, 95, 0.13);
+      }
+
+      .primary,
+      .ghost,
+      .danger {
+        min-height: 42px;
+        border-radius: 8px;
+        padding: 0 14px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .ghost {
+        background: var(--soft);
+        color: var(--accent);
+      }
+
+      .danger {
+        background: #f8e7e1;
+        color: #a1321b;
+      }
+
+      .login-panel .primary {
+        width: 100%;
+        margin-top: 16px;
+      }
+
+      .app {
+        display: none;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 18px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(39, 35, 28, 0.07);
+        min-width: 0;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .editor {
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+        align-content: start;
+      }
+
+      .list {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        max-height: 360px;
+        overflow: auto;
+      }
+
+      .item {
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fffdfa;
+      }
+
+      .item-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .item-title {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mini-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: var(--soft);
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .icon.delete {
+        background: #f8e7e1;
+        color: #a1321b;
+      }
+
+      .upload {
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .file-input {
+        padding: 14px;
+        border: 1px dashed #b9b2a8;
+        border-radius: 8px;
+        background: #fffdfa;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .empty {
+        color: var(--muted);
+        padding: 16px 4px;
+        text-align: center;
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        max-width: min(360px, calc(100% - 36px));
+        background: #202124;
+        color: #fff;
+        border-radius: 8px;
+        padding: 12px 14px;
+        box-shadow: var(--shadow);
+        transform: translateY(20px);
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.2s ease;
+      }
+
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      @media (max-width: 820px) {
+        .shell {
+          width: min(100% - 20px, 1180px);
+          padding-top: 18px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-head,
+        .item-top {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .mini-actions {
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="loginView" class="login">
+      <form class="login-panel" id="loginForm">
+        <h1>intip</h1>
+        <p>비밀번호로 들어가는 개인 메모장입니다.</p>
+        <div class="field">
+          <label for="password">비밀번호</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <button class="primary" type="submit">들어가기</button>
+      </form>
+    </main>
+
+    <main id="appView" class="app">
+      <div class="shell">
+        <header class="topbar">
+          <div class="brand">
+            <h1>intip</h1>
+            <p>메모, 사진, 파일을 한 곳에.</p>
+          </div>
+          <div class="actions">
+            <span class="status" id="syncStatus">준비됨</span>
+            <button class="ghost" id="refreshButton" type="button">새로고침</button>
+            <button class="danger" id="logoutButton" type="button">로그아웃</button>
+          </div>
+        </header>
+
+        <section class="workspace">
+          <article class="panel">
+            <div class="panel-head">
+              <h2>메모</h2>
+              <button class="ghost" id="newNoteButton" type="button">새 메모</button>
+            </div>
+            <form class="editor" id="noteForm">
+              <input id="noteTitle" type="text" placeholder="제목" maxlength="160" />
+              <textarea id="noteBody" placeholder="여기에 적어두세요."></textarea>
+              <div class="actions">
+                <button class="primary" type="submit">저장</button>
+                <button class="danger" id="deleteNoteButton" type="button">삭제</button>
+              </div>
+            </form>
+          </article>
+
+          <aside class="stack">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>저장된 메모</h2>
+                <span class="meta" id="noteCount">0개</span>
+              </div>
+              <div class="list" id="notesList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>파일</h2>
+                <span class="meta" id="fileCount">0개</span>
+              </div>
+              <form class="upload" id="uploadForm">
+                <input class="file-input" id="fileInput" type="file" />
+                <button class="primary" type="submit">업로드</button>
+              </form>
+              <div class="list" id="filesList"></div>
+            </section>
+          </aside>
+        </section>
+      </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const state = {
+        notes: [],
+        files: [],
+        currentNoteId: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+
+      function showToast(message) {
+        const toast = $("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2400);
+      }
+
+      function setStatus(message) {
+        $("syncStatus").textContent = message;
+      }
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          ...options,
+          headers: {
+            ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+            ...(options.headers || {}),
+          },
+        });
+
+        if (response.status === 401) {
+          showLogin();
+          throw new Error("로그인이 필요합니다.");
+        }
+
+        const contentType = response.headers.get("Content-Type") || "";
+        const data = contentType.includes("application/json") ? await response.json() : null;
+        if (!response.ok) throw new Error(data?.error || "요청에 실패했습니다.");
+        return data;
+      }
+
+      function showLogin() {
+        $("loginView").classList.remove("hidden");
+        $("appView").style.display = "none";
+      }
+
+      function showApp() {
+        $("loginView").classList.add("hidden");
+        $("appView").style.display = "block";
+      }
+
+      function formatDate(value) {
+        return new Intl.DateTimeFormat("ko-KR", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(value));
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+      }
+
+      function resetEditor() {
+        state.currentNoteId = null;
+        $("noteTitle").value = "";
+        $("noteBody").value = "";
+        $("deleteNoteButton").disabled = true;
+      }
+
+      function openNote(id) {
+        const note = state.notes.find((item) => item.id === id);
+        if (!note) return;
+        state.currentNoteId = note.id;
+        $("noteTitle").value = note.title;
+        $("noteBody").value = note.body;
+        $("deleteNoteButton").disabled = false;
+      }
+
+      function renderNotes() {
+        $("noteCount").textContent = `${state.notes.length}개`;
+        const list = $("notesList");
+        list.innerHTML = "";
+        if (!state.notes.length) {
+          list.innerHTML = '<div class="empty">아직 메모가 없습니다.</div>';
+          return;
+        }
+
+        for (const note of state.notes) {
+          const item = document.createElement("div");
+          item.className = "item";
+          item.innerHTML = `
+            <div class="item-top">
+              <div>
+                <h3 class="item-title"></h3>
+                <div class="meta">${formatDate(note.updatedAt)}</div>
+              </div>
+              <div class="mini-actions">
+                <button class="icon" type="button" title="열기">↗</button>
+              </div>
+            </div>
+          `;
+          item.querySelector(".item-title").textContent = note.title || "Untitled";
+          item.querySelector("button").addEventListener("click", () => openNote(note.id));
+          list.appendChild(item);
+        }
+      }
+
+      function renderFiles() {
+        $("fileCount").textContent = `${state.files.length}개`;
+        const list = $("filesList");
+        list.innerHTML = "";
+        if (!state.files.length) {
+          list.innerHTML = '<div class="empty">아직 파일이 없습니다.</div>';
+          return;
+        }
+
+        for (const file of state.files) {
+          const item = document.createElement("div");
+          item.className = "item";
+          item.innerHTML = `
+            <div class="item-top">
+              <div>
+                <h3 class="item-title"></h3>
+                <div class="meta">${formatBytes(file.size)} · ${formatDate(file.createdAt)}</div>
+              </div>
+              <div class="mini-actions">
+                <button class="icon" data-action="download" type="button" title="다운로드">↓</button>
+                <button class="icon delete" data-action="delete" type="button" title="삭제">×</button>
+              </div>
+            </div>
+          `;
+          item.querySelector(".item-title").textContent = file.name;
+          item.querySelector('[data-action="download"]').addEventListener("click", () => {
+            window.location.href = `/api/download?id=${encodeURIComponent(file.id)}`;
+          });
+          item.querySelector('[data-action="delete"]').addEventListener("click", () => deleteFile(file.id));
+          list.appendChild(item);
+        }
+      }
+
+      async function loadAll() {
+        setStatus("불러오는 중");
+        const [notesData, filesData] = await Promise.all([api("/api/notes"), api("/api/files")]);
+        state.notes = notesData.notes || [];
+        state.files = filesData.files || [];
+        renderNotes();
+        renderFiles();
+        setStatus("저장됨");
+      }
+
+      async function saveNote(event) {
+        event.preventDefault();
+        const title = $("noteTitle").value.trim() || "Untitled";
+        const body = $("noteBody").value;
+        setStatus("저장 중");
+        const data = await api("/api/notes", {
+          method: "POST",
+          body: JSON.stringify({ id: state.currentNoteId, title, body }),
+        });
+        const index = state.notes.findIndex((note) => note.id === data.note.id);
+        if (index >= 0) state.notes[index] = data.note;
+        else state.notes.unshift(data.note);
+        state.currentNoteId = data.note.id;
+        $("deleteNoteButton").disabled = false;
+        renderNotes();
+        setStatus("저장됨");
+        showToast("메모를 저장했습니다.");
+      }
+
+      async function deleteCurrentNote() {
+        if (!state.currentNoteId) return;
+        if (!confirm("이 메모를 삭제할까요?")) return;
+        await api(`/api/notes?id=${encodeURIComponent(state.currentNoteId)}`, { method: "DELETE" });
+        state.notes = state.notes.filter((note) => note.id !== state.currentNoteId);
+        resetEditor();
+        renderNotes();
+        showToast("메모를 삭제했습니다.");
+      }
+
+      async function uploadFile(event) {
+        event.preventDefault();
+        const file = $("fileInput").files[0];
+        if (!file) {
+          showToast("업로드할 파일을 선택하세요.");
+          return;
+        }
+
+        const form = new FormData();
+        form.append("file", file);
+        setStatus("업로드 중");
+        const data = await api("/api/files", { method: "POST", body: form });
+        state.files.unshift(data.file);
+        $("fileInput").value = "";
+        renderFiles();
+        setStatus("저장됨");
+        showToast("파일을 업로드했습니다.");
+      }
+
+      async function deleteFile(id) {
+        if (!confirm("이 파일을 삭제할까요?")) return;
+        await api(`/api/files?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+        state.files = state.files.filter((file) => file.id !== id);
+        renderFiles();
+        showToast("파일을 삭제했습니다.");
+      }
+
+      $("loginForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          await api("/api/login", {
+            method: "POST",
+            body: JSON.stringify({ password: $("password").value }),
+          });
+          $("password").value = "";
+          showApp();
+          resetEditor();
+          await loadAll();
+        } catch (error) {
+          showToast(error.message);
+        }
+      });
+
+      $("noteForm").addEventListener("submit", (event) => saveNote(event).catch((error) => showToast(error.message)));
+      $("deleteNoteButton").addEventListener("click", () => deleteCurrentNote().catch((error) => showToast(error.message)));
+      $("uploadForm").addEventListener("submit", (event) => uploadFile(event).catch((error) => showToast(error.message)));
+      $("newNoteButton").addEventListener("click", resetEditor);
+      $("refreshButton").addEventListener("click", () => loadAll().catch((error) => showToast(error.message)));
+      $("logoutButton").addEventListener("click", async () => {
+        await api("/api/logout", { method: "POST", body: "{}" }).catch(() => {});
+        showLogin();
+      });
+
+      (async function boot() {
+        resetEditor();
+        try {
+          const session = await api("/api/session");
+          if (session.authenticated) {
+            showApp();
+            await loadAll();
+          } else {
+            showLogin();
+          }
+        } catch {
+          showLogin();
+        }
+      })();
+    </script>
+  </body>
+</html>
+

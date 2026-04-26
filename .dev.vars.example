@@ -1,0 +1,3 @@
+INTIP_PASSWORD=change-this-password
+INTIP_SESSION_SECRET=change-this-to-a-long-random-secret
+
