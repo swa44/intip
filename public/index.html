@@ -8,15 +8,18 @@
     <style>
       :root {
         color-scheme: light;
-        --bg: #f5f3ee;
-        --panel: #ffffff;
+        --bg: #f6f4ef;
+        --panel: #fff;
         --ink: #202124;
-        --muted: #74706a;
-        --line: #dfdbd2;
-        --accent: #156c5f;
-        --accent-2: #d84f31;
-        --soft: #e9f3ef;
-        --shadow: 0 18px 50px rgba(39, 35, 28, 0.1);
+        --muted: #756f66;
+        --line: #ded8cf;
+        --accent: #11685c;
+        --accent-dark: #0c5147;
+        --danger: #a13b24;
+        --danger-soft: #f8e6df;
+        --soft: #e7f2ee;
+        --cream: #fffaf1;
+        --shadow: 0 18px 48px rgba(34, 30, 24, 0.1);
       }
 
       * {
@@ -25,14 +28,14 @@
 
       body {
         margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(17, 104, 92, 0.1), transparent 330px),
+          var(--bg);
+        color: var(--ink);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-        color: var(--ink);
-        background:
-          linear-gradient(180deg, rgba(21, 108, 95, 0.08), transparent 360px),
-          var(--bg);
-        min-height: 100vh;
       }
 
       button,
@@ -46,56 +49,61 @@
         cursor: pointer;
       }
 
-      .shell {
-        width: min(1180px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 28px 0 48px;
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
       }
 
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 24px;
+      input {
+        min-height: 46px;
+        padding: 0 13px;
       }
 
-      .brand {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+      textarea {
+        min-height: 340px;
+        padding: 14px;
+        line-height: 1.65;
+        resize: vertical;
       }
 
-      .brand h1 {
-        margin: 0;
-        font-size: clamp(28px, 5vw, 46px);
-        line-height: 1;
-        letter-spacing: 0;
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(17, 104, 92, 0.13);
       }
 
-      .brand p {
-        margin: 0;
+      label {
         color: var(--muted);
-        font-size: 15px;
+        font-size: 13px;
+        font-weight: 800;
       }
 
-      .status {
-        color: var(--muted);
-        font-size: 14px;
+      .hidden {
+        display: none !important;
       }
 
       .login {
         display: grid;
         place-items: center;
-        min-height: 72vh;
+        min-height: 78vh;
+        padding: 24px;
       }
 
-      .login-panel {
-        width: min(420px, 100%);
+      .login-panel,
+      .panel {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
         box-shadow: var(--shadow);
+      }
+
+      .login-panel {
+        width: min(420px, 100%);
         padding: 28px;
       }
 
@@ -115,38 +123,43 @@
         gap: 8px;
       }
 
-      label {
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(30px, 5vw, 48px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .brand p,
+      .muted,
+      .meta {
         color: var(--muted);
-        font-size: 13px;
-        font-weight: 700;
       }
 
-      input,
-      textarea {
-        width: 100%;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: #fff;
-        color: var(--ink);
-        outline: none;
+      .brand p {
+        margin: 6px 0 0;
+        font-size: 15px;
       }
 
-      input {
-        min-height: 46px;
-        padding: 0 13px;
-      }
-
-      textarea {
-        min-height: 300px;
-        padding: 14px;
-        line-height: 1.65;
-        resize: vertical;
-      }
-
-      input:focus,
-      textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(21, 108, 95, 0.13);
+      .actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .primary,
@@ -155,7 +168,7 @@
         min-height: 42px;
         border-radius: 8px;
         padding: 0 14px;
-        font-weight: 800;
+        font-weight: 900;
         white-space: nowrap;
       }
 
@@ -164,14 +177,18 @@
         color: #fff;
       }
 
+      .primary:hover {
+        background: var(--accent-dark);
+      }
+
       .ghost {
         background: var(--soft);
         color: var(--accent);
       }
 
       .danger {
-        background: #f8e7e1;
-        color: #a1321b;
+        background: var(--danger-soft);
+        color: var(--danger);
       }
 
       .login-panel .primary {
@@ -183,18 +200,58 @@
         display: none;
       }
 
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .tab {
+        min-height: 74px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--ink);
+        padding: 12px;
+        text-align: left;
+      }
+
+      .tab strong {
+        display: block;
+        font-size: 17px;
+      }
+
+      .tab span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .tab.active {
+        border-color: var(--accent);
+        background: var(--soft);
+        color: var(--accent);
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
       .workspace {
         display: grid;
-        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
         gap: 18px;
       }
 
       .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(39, 35, 28, 0.07);
         min-width: 0;
+        box-shadow: 0 10px 30px rgba(39, 35, 28, 0.07);
       }
 
       .panel-head {
@@ -211,29 +268,18 @@
         font-size: 18px;
       }
 
-      .editor {
-        padding: 18px;
+      .editor,
+      .upload-panel {
         display: grid;
         gap: 14px;
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .stack {
-        display: grid;
-        gap: 18px;
-        align-content: start;
+        padding: 18px;
       }
 
       .list {
         display: grid;
         gap: 10px;
         padding: 14px;
-        max-height: 360px;
+        max-height: 560px;
         overflow: auto;
       }
 
@@ -243,7 +289,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 12px;
-        background: #fffdfa;
+        background: var(--cream);
       }
 
       .item-top {
@@ -261,7 +307,6 @@
       }
 
       .meta {
-        color: var(--muted);
         font-size: 12px;
       }
 
@@ -281,38 +326,91 @@
       }
 
       .icon.delete {
-        background: #f8e7e1;
-        color: #a1321b;
+        background: var(--danger-soft);
+        color: var(--danger);
       }
 
-      .upload {
-        padding: 18px;
+      .dropzone {
         display: grid;
-        gap: 12px;
-      }
-
-      .file-input {
-        padding: 14px;
-        border: 1px dashed #b9b2a8;
+        place-items: center;
+        min-height: 190px;
+        border: 2px dashed #b9b1a5;
         border-radius: 8px;
-        background: #fffdfa;
+        background: #fffdf8;
+        padding: 22px;
+        text-align: center;
+        transition:
+          border-color 0.18s ease,
+          background 0.18s ease,
+          transform 0.18s ease;
       }
 
-      .hidden {
-        display: none !important;
+      .dropzone.dragging {
+        border-color: var(--accent);
+        background: var(--soft);
+        transform: translateY(-2px);
+      }
+
+      .dropzone strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 18px;
+      }
+
+      .dropzone p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .dropzone input {
+        display: none;
+      }
+
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .image-card {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .thumb {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        background: var(--soft);
+      }
+
+      .image-info {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
       }
 
       .empty {
         color: var(--muted);
-        padding: 16px 4px;
+        padding: 22px 8px;
         text-align: center;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
       }
 
       .toast {
         position: fixed;
         right: 18px;
         bottom: 18px;
-        max-width: min(360px, calc(100% - 36px));
+        max-width: min(420px, calc(100% - 36px));
         background: #202124;
         color: #fff;
         border-radius: 8px;
@@ -335,8 +433,10 @@
           padding-top: 18px;
         }
 
-        .topbar {
-          align-items: flex-start;
+        .topbar,
+        .item-top,
+        .panel-head {
+          align-items: stretch;
           flex-direction: column;
         }
 
@@ -344,10 +444,8 @@
           grid-template-columns: 1fr;
         }
 
-        .panel-head,
-        .item-top {
-          align-items: stretch;
-          flex-direction: column;
+        .tabs {
+          grid-template-columns: 1fr;
         }
 
         .mini-actions {
@@ -360,7 +458,7 @@
     <main id="loginView" class="login">
       <form class="login-panel" id="loginForm">
         <h1>intip</h1>
-        <p>비밀번호로 들어가는 개인 메모장입니다.</p>
+        <p>비밀번호로 들어가는 개인 공간입니다.</p>
         <div class="field">
           <label for="password">비밀번호</label>
           <input id="password" name="password" type="password" autocomplete="current-password" required />
@@ -374,7 +472,7 @@
         <header class="topbar">
           <div class="brand">
             <h1>intip</h1>
-            <p>메모, 사진, 파일을 한 곳에.</p>
+            <p>메모, 이미지, 파일을 한 곳에.</p>
           </div>
           <div class="actions">
             <span class="status" id="syncStatus">준비됨</span>
@@ -383,43 +481,84 @@
           </div>
         </header>
 
-        <section class="workspace">
-          <article class="panel">
-            <div class="panel-head">
-              <h2>메모</h2>
-              <button class="ghost" id="newNoteButton" type="button">새 메모</button>
-            </div>
-            <form class="editor" id="noteForm">
-              <input id="noteTitle" type="text" placeholder="제목" maxlength="160" />
-              <textarea id="noteBody" placeholder="여기에 적어두세요."></textarea>
-              <div class="actions">
-                <button class="primary" type="submit">저장</button>
-                <button class="danger" id="deleteNoteButton" type="button">삭제</button>
-              </div>
-            </form>
-          </article>
+        <nav class="tabs" aria-label="저장소 메뉴">
+          <button class="tab active" data-tab="notes" type="button">
+            <strong>메모</strong>
+            <span id="notesTabCount">0개</span>
+          </button>
+          <button class="tab" data-tab="images" type="button">
+            <strong>이미지</strong>
+            <span id="imagesTabCount">0개</span>
+          </button>
+          <button class="tab" data-tab="files" type="button">
+            <strong>파일</strong>
+            <span id="filesTabCount">0개</span>
+          </button>
+        </nav>
 
-          <aside class="stack">
-            <section class="panel">
+        <section id="notesView" class="view active">
+          <div class="workspace">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>메모 작성</h2>
+                <button class="ghost" id="newNoteButton" type="button">새 메모</button>
+              </div>
+              <form class="editor" id="noteForm">
+                <input id="noteTitle" type="text" placeholder="제목" maxlength="160" />
+                <textarea id="noteBody" placeholder="여기에 적어두세요."></textarea>
+                <div class="actions">
+                  <button class="primary" type="submit">저장</button>
+                  <button class="danger" id="deleteNoteButton" type="button">삭제</button>
+                </div>
+              </form>
+            </article>
+
+            <aside class="panel">
               <div class="panel-head">
                 <h2>저장된 메모</h2>
                 <span class="meta" id="noteCount">0개</span>
               </div>
               <div class="list" id="notesList"></div>
-            </section>
+            </aside>
+          </div>
+        </section>
 
-            <section class="panel">
-              <div class="panel-head">
-                <h2>파일</h2>
-                <span class="meta" id="fileCount">0개</span>
-              </div>
-              <form class="upload" id="uploadForm">
-                <input class="file-input" id="fileInput" type="file" />
-                <button class="primary" type="submit">업로드</button>
-              </form>
-              <div class="list" id="filesList"></div>
-            </section>
-          </aside>
+        <section id="imagesView" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>이미지</h2>
+              <span class="meta" id="imageCount">0개</span>
+            </div>
+            <div class="upload-panel">
+              <label class="dropzone" id="imageDropzone" for="imageInput">
+                <input id="imageInput" type="file" accept="image/*" multiple />
+                <span>
+                  <strong>이미지를 끌어오거나 클릭해서 업로드</strong>
+                  <p>여러 장을 한 번에 올릴 수 있습니다.</p>
+                </span>
+              </label>
+            </div>
+            <div class="gallery" id="imagesList"></div>
+          </div>
+        </section>
+
+        <section id="filesView" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>파일</h2>
+              <span class="meta" id="fileCount">0개</span>
+            </div>
+            <div class="upload-panel">
+              <label class="dropzone" id="fileDropzone" for="fileInput">
+                <input id="fileInput" type="file" multiple />
+                <span>
+                  <strong>파일을 끌어오거나 클릭해서 업로드</strong>
+                  <p>이미지는 이미지 탭에 올리고, 문서나 압축 파일은 여기에 보관하세요.</p>
+                </span>
+              </label>
+            </div>
+            <div class="list" id="filesList"></div>
+          </div>
         </section>
       </div>
     </main>
@@ -428,19 +567,23 @@
 
     <script>
       const state = {
+        activeTab: "notes",
         notes: [],
         files: [],
         currentNoteId: null,
       };
 
       const $ = (id) => document.getElementById(id);
+      const isImage = (file) => String(file.type || "").startsWith("image/");
+      const storedImages = () => state.files.filter(isImage);
+      const storedFiles = () => state.files.filter((file) => !isImage(file));
 
       function showToast(message) {
         const toast = $("toast");
         toast.textContent = message;
         toast.classList.add("show");
         window.clearTimeout(showToast.timer);
-        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2400);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2600);
       }
 
       function setStatus(message) {
@@ -451,7 +594,7 @@
         const response = await fetch(path, {
           ...options,
           headers: {
-            ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+            "Content-Type": "application/json",
             ...(options.headers || {}),
           },
         });
@@ -477,6 +620,16 @@
         $("appView").style.display = "block";
       }
 
+      function setTab(tab) {
+        state.activeTab = tab;
+        document.querySelectorAll(".tab").forEach((button) => {
+          button.classList.toggle("active", button.dataset.tab === tab);
+        });
+        document.querySelectorAll(".view").forEach((view) => {
+          view.classList.toggle("active", view.id === `${tab}View`);
+        });
+      }
+
       function formatDate(value) {
         return new Intl.DateTimeFormat("ko-KR", {
           month: "short",
@@ -493,6 +646,17 @@
         return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
       }
 
+      function updateCounts() {
+        const images = storedImages();
+        const files = storedFiles();
+        $("notesTabCount").textContent = `${state.notes.length}개`;
+        $("imagesTabCount").textContent = `${images.length}개`;
+        $("filesTabCount").textContent = `${files.length}개`;
+        $("noteCount").textContent = `${state.notes.length}개`;
+        $("imageCount").textContent = `${images.length}개`;
+        $("fileCount").textContent = `${files.length}개`;
+      }
+
       function resetEditor() {
         state.currentNoteId = null;
         $("noteTitle").value = "";
@@ -507,14 +671,15 @@
         $("noteTitle").value = note.title;
         $("noteBody").value = note.body;
         $("deleteNoteButton").disabled = false;
+        setTab("notes");
       }
 
       function renderNotes() {
-        $("noteCount").textContent = `${state.notes.length}개`;
         const list = $("notesList");
         list.innerHTML = "";
         if (!state.notes.length) {
           list.innerHTML = '<div class="empty">아직 메모가 없습니다.</div>';
+          updateCounts();
           return;
         }
 
@@ -536,18 +701,75 @@
           item.querySelector("button").addEventListener("click", () => openNote(note.id));
           list.appendChild(item);
         }
+        updateCounts();
       }
 
-      function renderFiles() {
-        $("fileCount").textContent = `${state.files.length}개`;
-        const list = $("filesList");
+      function fileActions(file) {
+        const actions = document.createElement("div");
+        actions.className = "mini-actions";
+
+        const download = document.createElement("button");
+        download.className = "icon";
+        download.type = "button";
+        download.title = "다운로드";
+        download.textContent = "↓";
+        download.addEventListener("click", () => {
+          window.location.href = `/api/download?id=${encodeURIComponent(file.id)}`;
+        });
+
+        const remove = document.createElement("button");
+        remove.className = "icon delete";
+        remove.type = "button";
+        remove.title = "삭제";
+        remove.textContent = "×";
+        remove.addEventListener("click", () => deleteFile(file.id));
+
+        actions.append(download, remove);
+        return actions;
+      }
+
+      function renderImages() {
+        const list = $("imagesList");
+        const images = storedImages();
         list.innerHTML = "";
-        if (!state.files.length) {
-          list.innerHTML = '<div class="empty">아직 파일이 없습니다.</div>';
+        if (!images.length) {
+          list.innerHTML = '<div class="empty">아직 이미지가 없습니다.</div>';
+          updateCounts();
           return;
         }
 
-        for (const file of state.files) {
+        for (const image of images) {
+          const card = document.createElement("article");
+          card.className = "image-card";
+          card.innerHTML = `
+            <img class="thumb" alt="" loading="lazy" />
+            <div class="image-info">
+              <div>
+                <h3 class="item-title"></h3>
+                <div class="meta">${formatBytes(image.size)} · ${formatDate(image.createdAt)}</div>
+              </div>
+            </div>
+          `;
+          card.querySelector("img").src = `/api/view?id=${encodeURIComponent(image.id)}`;
+          card.querySelector("img").alt = image.name;
+          card.querySelector(".item-title").textContent = image.name;
+          card.querySelector(".image-info").appendChild(fileActions(image));
+          list.appendChild(card);
+        }
+        updateCounts();
+      }
+
+      function renderFiles() {
+        const list = $("filesList");
+        const files = storedFiles();
+        list.innerHTML = "";
+        if (!files.length) {
+          list.innerHTML = '<div class="empty">아직 파일이 없습니다.</div>';
+          updateCounts();
+          return;
+        }
+
+        for (const file of files) {
           const item = document.createElement("div");
           item.className = "item";
           item.innerHTML = `
@@ -556,19 +778,19 @@
                 <h3 class="item-title"></h3>
                 <div class="meta">${formatBytes(file.size)} · ${formatDate(file.createdAt)}</div>
               </div>
-              <div class="mini-actions">
-                <button class="icon" data-action="download" type="button" title="다운로드">↓</button>
-                <button class="icon delete" data-action="delete" type="button" title="삭제">×</button>
-              </div>
             </div>
           `;
           item.querySelector(".item-title").textContent = file.name;
-          item.querySelector('[data-action="download"]').addEventListener("click", () => {
-            window.location.href = `/api/download?id=${encodeURIComponent(file.id)}`;
-          });
-          item.querySelector('[data-action="delete"]').addEventListener("click", () => deleteFile(file.id));
+          item.querySelector(".item-top").appendChild(fileActions(file));
           list.appendChild(item);
         }
+        updateCounts();
+      }
+
+      function renderAll() {
+        renderNotes();
+        renderImages();
+        renderFiles();
       }
 
       async function loadAll() {
@@ -576,8 +798,7 @@
         const [notesData, filesData] = await Promise.all([api("/api/notes"), api("/api/files")]);
         state.notes = notesData.notes || [];
         state.files = filesData.files || [];
-        renderNotes();
-        renderFiles();
+        renderAll();
         setStatus("저장됨");
       }
 
@@ -610,15 +831,14 @@
         showToast("메모를 삭제했습니다.");
       }
 
-      async function uploadFile(event) {
-        event.preventDefault();
-        const file = $("fileInput").files[0];
-        if (!file) {
-          showToast("업로드할 파일을 선택하세요.");
-          return;
+      async function uploadOne(file, expected) {
+        if (expected === "image" && !file.type.startsWith("image/")) {
+          throw new Error(`${file.name}은 이미지 파일이 아닙니다.`);
+        }
+        if (expected === "file" && file.type.startsWith("image/")) {
+          throw new Error(`${file.name}은 이미지 탭에 업로드하세요.`);
         }
 
-        setStatus("업로드 중");
         const signed = await api("/api/files", {
           method: "POST",
           body: JSON.stringify({
@@ -631,9 +851,6 @@
 
         const upload = await fetch(signed.uploadUrl, {
           method: "PUT",
-          headers: {
-            "Content-Type": file.type || "application/octet-stream",
-          },
           body: file,
         });
         if (!upload.ok) throw new Error("R2 업로드에 실패했습니다. R2 CORS 설정을 확인하세요.");
@@ -645,22 +862,67 @@
             file: signed.file,
           }),
         });
+        return data.file;
+      }
 
-        if (!state.files.some((item) => item.id === data.file.id)) {
-          state.files.unshift(data.file);
+      async function uploadMany(fileList, expected) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+
+        setStatus("업로드 중");
+        let uploaded = 0;
+        for (const file of files) {
+          const record = await uploadOne(file, expected);
+          if (!state.files.some((item) => item.id === record.id)) {
+            state.files.unshift(record);
+          }
+          uploaded += 1;
+          setStatus(`${uploaded}/${files.length} 업로드`);
         }
-        $("fileInput").value = "";
+        renderImages();
         renderFiles();
         setStatus("저장됨");
-        showToast("파일을 업로드했습니다.");
+        showToast(`${uploaded}개를 업로드했습니다.`);
       }
 
       async function deleteFile(id) {
-        if (!confirm("이 파일을 삭제할까요?")) return;
+        if (!confirm("이 항목을 삭제할까요?")) return;
         await api(`/api/files?id=${encodeURIComponent(id)}`, { method: "DELETE" });
         state.files = state.files.filter((file) => file.id !== id);
+        renderImages();
         renderFiles();
-        showToast("파일을 삭제했습니다.");
+        showToast("삭제했습니다.");
+      }
+
+      function bindDropzone(zoneId, inputId, expected) {
+        const zone = $(zoneId);
+        const input = $(inputId);
+
+        input.addEventListener("change", () => {
+          uploadMany(input.files, expected)
+            .catch((error) => showToast(error.message))
+            .finally(() => {
+              input.value = "";
+            });
+        });
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            zone.classList.add("dragging");
+          });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            zone.classList.remove("dragging");
+          });
+        });
+
+        zone.addEventListener("drop", (event) => {
+          uploadMany(event.dataTransfer.files, expected).catch((error) => showToast(error.message));
+        });
       }
 
       $("loginForm").addEventListener("submit", async (event) => {
@@ -679,15 +941,20 @@
         }
       });
 
+      document.querySelectorAll(".tab").forEach((button) => {
+        button.addEventListener("click", () => setTab(button.dataset.tab));
+      });
+
       $("noteForm").addEventListener("submit", (event) => saveNote(event).catch((error) => showToast(error.message)));
       $("deleteNoteButton").addEventListener("click", () => deleteCurrentNote().catch((error) => showToast(error.message)));
-      $("uploadForm").addEventListener("submit", (event) => uploadFile(event).catch((error) => showToast(error.message)));
       $("newNoteButton").addEventListener("click", resetEditor);
       $("refreshButton").addEventListener("click", () => loadAll().catch((error) => showToast(error.message)));
       $("logoutButton").addEventListener("click", async () => {
         await api("/api/logout", { method: "POST", body: "{}" }).catch(() => {});
         showLogin();
       });
+      bindDropzone("imageDropzone", "imageInput", "image");
+      bindDropzone("fileDropzone", "fileInput", "file");
 
       (async function boot() {
         resetEditor();

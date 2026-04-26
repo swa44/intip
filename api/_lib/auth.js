@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { loadEnv } = require("./env");
 
 const SESSION_COOKIE = "intip_session";
 
@@ -30,6 +31,7 @@ function timingSafeEqual(a, b) {
 }
 
 function createSessionCookie() {
+  loadEnv();
   if (!process.env.INTIP_SESSION_SECRET) {
     throw new Error("INTIP_SESSION_SECRET is not configured.");
   }
@@ -49,6 +51,7 @@ function clearSessionCookie() {
 }
 
 function isAuthenticated(req) {
+  loadEnv();
   const secret = process.env.INTIP_SESSION_SECRET;
   const cookie = parseCookies(req)[SESSION_COOKIE];
   if (!secret || !cookie || !cookie.includes(".")) return false;
@@ -76,4 +79,3 @@ module.exports = {
   isAuthenticated,
   requireAuth,
 };
-

@@ -5,11 +5,13 @@ const {
   S3Client,
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { loadEnv } = require("./env");
 
 const NOTES_KEY = "app/notes.json";
 const FILES_KEY = "app/files.json";
 
 function getClient() {
+  loadEnv();
   const accountId = process.env.R2_ACCOUNT_ID;
   if (!accountId || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
     throw new Error("R2 credentials are not configured.");
@@ -26,6 +28,7 @@ function getClient() {
 }
 
 function bucket() {
+  loadEnv();
   if (!process.env.R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME is not configured.");
   return process.env.R2_BUCKET_NAME;
 }
@@ -63,19 +66,19 @@ async function signedPutUrl({ key, type }) {
     new PutObjectCommand({
       Bucket: bucket(),
       Key: key,
-      ContentType: type || "application/octet-stream",
     }),
     { expiresIn: 60 * 10 },
   );
 }
 
-async function signedGetUrl({ key, name }) {
+async function signedGetUrl({ key, name, type, inline = false }) {
   return getSignedUrl(
     getClient(),
     new GetObjectCommand({
       Bucket: bucket(),
       Key: key,
-      ResponseContentDisposition: `attachment; filename="${encodeURIComponent(name)}"`,
+      ResponseContentType: type || "application/octet-stream",
+      ResponseContentDisposition: `${inline ? "inline" : "attachment"}; filename="${encodeURIComponent(name)}"`,
     }),
     { expiresIn: 60 * 10 },
   );
@@ -104,4 +107,3 @@ module.exports = {
   signedPutUrl,
   writeJson,
 };
-

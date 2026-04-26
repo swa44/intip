@@ -11,8 +11,17 @@ module.exports = async function handler(req, res) {
   const files = await readJson(FILES_KEY, []);
   const record = files.find((file) => file.id === id);
   if (!record) return res.status(404).json({ error: "File not found." });
+  if (!String(record.type || "").startsWith("image/")) {
+    return res.status(400).json({ error: "This file is not an image." });
+  }
 
-  const url = await signedGetUrl({ key: record.key, name: record.name, type: record.type });
+  const url = await signedGetUrl({
+    key: record.key,
+    name: record.name,
+    type: record.type,
+    inline: true,
+  });
   res.writeHead(302, { Location: url });
   return res.end();
 };
+
