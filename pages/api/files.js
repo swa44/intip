@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { requireAuth } = require("./_lib/auth");
+const { requireAuth } = require("../../lib/auth");
 const {
   FILES_KEY,
   cleanFileName,
@@ -8,9 +8,9 @@ const {
   signedGetUrl,
   signedPutUrl,
   writeJson,
-} = require("./_lib/r2");
+} = require("../../lib/r2");
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (!requireAuth(req, res)) return;
 
   if (req.method === "GET") {

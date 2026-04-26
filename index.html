@@ -34,8 +34,15 @@
           var(--bg);
         color: var(--ink);
         font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          "Apple SD Gothic Neo",
+          "Malgun Gothic",
+          sans-serif;
       }
 
       button,
@@ -119,9 +126,20 @@
       }
 
       .rich-editor input[type="checkbox"] {
-        width: auto;
-        min-height: 0;
-        margin-right: 8px;
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
+        min-height: 20px;
+        margin: 3px 8px 0 0;
+        accent-color: var(--accent);
+      }
+
+      .rich-editor .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        min-height: 30px;
+        line-height: 1.7;
       }
 
       input:focus,
@@ -345,6 +363,10 @@
         overflow: auto;
       }
 
+      .search-box {
+        padding: 14px 14px 0;
+      }
+
       .item {
         display: grid;
         gap: 8px;
@@ -352,6 +374,20 @@
         border-radius: 8px;
         padding: 12px;
         background: var(--cream);
+      }
+
+      .note-item {
+        cursor: pointer;
+      }
+
+      .note-item:hover {
+        border-color: var(--accent);
+        background: #f2faf6;
+      }
+
+      .note-item.pinned {
+        border-color: rgba(17, 104, 92, 0.45);
+        background: var(--soft);
       }
 
       .item-top {
@@ -663,11 +699,17 @@
 
     <main id="loginView" class="login hidden">
       <form class="login-panel" id="loginForm">
-        <h1>intip</h1>
-        <p>비밀번호로 들어가는 개인 공간입니다.</p>
+        <h1>464</h1>
+        <p>-</p>
         <div class="field">
           <label for="password">비밀번호</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
         </div>
         <button class="primary" type="submit">들어가기</button>
       </form>
@@ -677,13 +719,17 @@
       <div class="shell">
         <header class="topbar">
           <div class="brand">
-            <h1>intip</h1>
-            <p>메모, 이미지, 파일을 한 곳에.</p>
+            <h1>464</h1>
+            <p>기록.</p>
           </div>
           <div class="actions">
             <span class="status" id="syncStatus">준비됨</span>
-            <button class="ghost" id="refreshButton" type="button">새로고침</button>
-            <button class="danger" id="logoutButton" type="button">로그아웃</button>
+            <button class="ghost" id="refreshButton" type="button">
+              새로고침
+            </button>
+            <button class="danger" id="logoutButton" type="button">
+              로그아웃
+            </button>
           </div>
         </header>
 
@@ -707,18 +753,74 @@
             <article class="panel">
               <div class="panel-head">
                 <h2>메모 작성</h2>
-                <button class="ghost" id="newNoteButton" type="button">새 메모</button>
+                <button class="ghost" id="newNoteButton" type="button">
+                  새 메모
+                </button>
               </div>
               <form class="editor" id="noteForm">
-                <input id="noteTitle" type="text" placeholder="제목" maxlength="160" />
+                <input
+                  id="noteTitle"
+                  type="text"
+                  placeholder="제목"
+                  maxlength="160"
+                />
                 <div class="editor-toolbar" aria-label="메모 편집 도구">
-                  <button class="tool" data-command="bold" type="button" title="굵게">B</button>
-                  <button class="tool" data-command="italic" type="button" title="기울임">I</button>
-                  <button class="tool" data-command="underline" type="button" title="밑줄">U</button>
-                  <button class="tool" data-command="insertUnorderedList" type="button" title="목록">•</button>
-                  <button class="tool" data-command="insertOrderedList" type="button" title="번호 목록">1.</button>
-                  <button class="tool" id="checklistButton" type="button" title="체크박스">☑</button>
-                  <button class="tool" id="linkButton" type="button" title="링크">↗</button>
+                  <button
+                    class="tool"
+                    data-command="bold"
+                    type="button"
+                    title="굵게"
+                  >
+                    B
+                  </button>
+                  <button
+                    class="tool"
+                    data-command="italic"
+                    type="button"
+                    title="기울임"
+                  >
+                    I
+                  </button>
+                  <button
+                    class="tool"
+                    data-command="underline"
+                    type="button"
+                    title="밑줄"
+                  >
+                    U
+                  </button>
+                  <button
+                    class="tool"
+                    id="bulletListButton"
+                    type="button"
+                    title="목록"
+                  >
+                    •
+                  </button>
+                  <button
+                    class="tool"
+                    id="numberListButton"
+                    type="button"
+                    title="번호 목록"
+                  >
+                    1.
+                  </button>
+                  <button
+                    class="tool"
+                    id="checklistButton"
+                    type="button"
+                    title="체크박스"
+                  >
+                    ☑
+                  </button>
+                  <button
+                    class="tool"
+                    id="linkButton"
+                    type="button"
+                    title="링크"
+                  >
+                    ↗
+                  </button>
                 </div>
                 <div
                   class="rich-editor"
@@ -728,7 +830,9 @@
                 ></div>
                 <div class="actions">
                   <button class="primary" type="submit">저장</button>
-                  <button class="danger" id="deleteNoteButton" type="button">삭제</button>
+                  <button class="danger" id="deleteNoteButton" type="button">
+                    삭제
+                  </button>
                 </div>
               </form>
             </article>
@@ -737,6 +841,13 @@
               <div class="panel-head">
                 <h2>저장된 메모</h2>
                 <span class="meta" id="noteCount">0개</span>
+              </div>
+              <div class="search-box">
+                <input
+                  id="noteSearch"
+                  type="search"
+                  placeholder="제목이나 내용 검색"
+                />
               </div>
               <div class="list" id="notesList"></div>
             </aside>
@@ -773,7 +884,10 @@
                 <input id="fileInput" type="file" multiple />
                 <span>
                   <strong>파일을 끌어오거나 클릭해서 업로드</strong>
-                  <p>이미지는 이미지 탭에 올리고, 문서나 압축 파일은 여기에 보관하세요.</p>
+                  <p>
+                    이미지는 이미지 탭에 올리고, 문서나 압축 파일은 여기에
+                    보관하세요.
+                  </p>
                 </span>
               </label>
             </div>
@@ -796,16 +910,27 @@
       </div>
     </div>
 
-    <section class="modal hidden" id="imageModal" aria-modal="true" role="dialog">
+    <section
+      class="modal hidden"
+      id="imageModal"
+      aria-modal="true"
+      role="dialog"
+    >
       <div class="modal-head">
         <div class="modal-title">
           <h2 id="modalImageName">이미지</h2>
           <p id="modalImageMeta"></p>
         </div>
         <div class="actions">
-          <button class="ghost" id="modalDownloadButton" type="button">다운로드</button>
-          <button class="danger" id="modalDeleteButton" type="button">삭제</button>
-          <button class="ghost" id="modalCloseButton" type="button">닫기</button>
+          <button class="ghost" id="modalDownloadButton" type="button">
+            다운로드
+          </button>
+          <button class="danger" id="modalDeleteButton" type="button">
+            삭제
+          </button>
+          <button class="ghost" id="modalCloseButton" type="button">
+            닫기
+          </button>
         </div>
       </div>
       <div class="modal-body" id="modalBackdrop">
@@ -820,6 +945,7 @@
         files: [],
         currentNoteId: null,
         previewImageId: null,
+        noteQuery: "",
       };
 
       const $ = (id) => document.getElementById(id);
@@ -832,7 +958,10 @@
         toast.textContent = message;
         toast.classList.add("show");
         window.clearTimeout(showToast.timer);
-        showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2600);
+        showToast.timer = window.setTimeout(
+          () => toast.classList.remove("show"),
+          2600,
+        );
       }
 
       function setStatus(message) {
@@ -844,8 +973,12 @@
         $("progressBox").classList.toggle("indeterminate", indeterminate);
         $("progressSpinner").classList.toggle("hidden", !indeterminate);
         $("progressLabel").textContent = label;
-        $("progressPercent").textContent = indeterminate ? "" : `${Math.max(0, Math.min(100, Math.round(percent)))}%`;
-        $("progressBar").style.width = indeterminate ? "" : `${Math.max(0, Math.min(100, percent))}%`;
+        $("progressPercent").textContent = indeterminate
+          ? ""
+          : `${Math.max(0, Math.min(100, Math.round(percent)))}%`;
+        $("progressBar").style.width = indeterminate
+          ? ""
+          : `${Math.max(0, Math.min(100, percent))}%`;
       }
 
       function hideProgress(delay = 450) {
@@ -873,8 +1006,14 @@
         }
 
         const contentType = response.headers.get("Content-Type") || "";
-        const data = contentType.includes("application/json") ? await response.json() : null;
-        if (!response.ok) throw new Error(data?.error || "요청에 실패했습니다.");
+        const data = contentType.includes("application/json")
+          ? await response.json()
+          : null;
+        const text = data ? "" : await response.text().catch(() => "");
+        if (!response.ok)
+          throw new Error(
+            data?.error || text || `요청에 실패했습니다. (${response.status})`,
+          );
         return data;
       }
 
@@ -912,7 +1051,10 @@
       function formatBytes(bytes) {
         if (!bytes) return "0 B";
         const units = ["B", "KB", "MB", "GB", "TB"];
-        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        const index = Math.min(
+          Math.floor(Math.log(bytes) / Math.log(1024)),
+          units.length - 1,
+        );
         return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
       }
 
@@ -954,6 +1096,16 @@
         return escapeHtml(value).replace(/\n/g, "<br>");
       }
 
+      function htmlToText(value) {
+        const div = document.createElement("div");
+        div.innerHTML = value || "";
+        return div.innerText || div.textContent || "";
+      }
+
+      function searchableNoteText(note) {
+        return `${note.title || ""} ${note.body || ""} ${htmlToText(note.bodyHtml || "")}`.toLowerCase();
+      }
+
       function focusEditor() {
         $("noteBody").focus();
       }
@@ -963,7 +1115,7 @@
         document.execCommand(
           "insertHTML",
           false,
-          '<div><label><input type="checkbox"> <span>체크 항목</span></label></div>',
+          '<div class="check-row"><input type="checkbox"><span>&nbsp;</span></div>',
         );
       }
 
@@ -971,22 +1123,109 @@
         focusEditor();
         const url = prompt("링크 주소를 입력하세요.");
         if (!url) return;
-        const safeUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+        const safeUrl =
+          url.startsWith("http://") || url.startsWith("https://")
+            ? url
+            : `https://${url}`;
         document.execCommand("createLink", false, safeUrl);
+      }
+
+      function insertList(type) {
+        focusEditor();
+        const tag = type === "ordered" ? "ol" : "ul";
+        document.execCommand(
+          "insertHTML",
+          false,
+          `<${tag}><li>&nbsp;</li></${tag}><div><br></div>`,
+        );
+        const selection = window.getSelection();
+        const listItem = selection.anchorNode?.parentElement?.closest?.("li");
+        if (listItem) placeCaretAtStart(listItem);
+      }
+
+      function closestBlock(node) {
+        let current =
+          node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        while (current && current !== $("noteBody")) {
+          if (["DIV", "P", "LI"].includes(current.tagName)) return current;
+          current = current.parentElement;
+        }
+        return null;
+      }
+
+      function isEffectivelyEmpty(element) {
+        return (
+          !element || element.innerText.replace(/\u00a0/g, " ").trim() === ""
+        );
+      }
+
+      function placeCaretAtStart(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.setStart(element, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function handleEditorEnter(event) {
+        if (event.key !== "Enter" || event.shiftKey) return;
+
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const block = closestBlock(selection.anchorNode);
+        if (block?.classList.contains("check-row")) {
+          event.preventDefault();
+          block.insertAdjacentHTML(
+            "afterend",
+            '<div class="check-row"><input type="checkbox"><span>&nbsp;</span></div>',
+          );
+          placeCaretAtStart(block.nextElementSibling.querySelector("span"));
+          return;
+        }
+
+        const listItem =
+          block?.tagName === "LI"
+            ? block
+            : selection.anchorNode?.parentElement?.closest?.("li");
+        if (listItem && isEffectivelyEmpty(listItem)) {
+          event.preventDefault();
+          document.execCommand("outdent", false);
+          document.execCommand("formatBlock", false, "div");
+        }
       }
 
       function renderNotes() {
         const list = $("notesList");
+        const query = state.noteQuery.trim().toLowerCase();
+        const notes = (
+          query
+            ? state.notes.filter((note) =>
+                searchableNoteText(note).includes(query),
+              )
+            : state.notes
+        ).toSorted((a, b) => {
+          if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+          return new Date(b.updatedAt) - new Date(a.updatedAt);
+        });
+
         list.innerHTML = "";
         if (!state.notes.length) {
           list.innerHTML = '<div class="empty">아직 메모가 없습니다.</div>';
           updateCounts();
           return;
         }
+        if (!notes.length) {
+          list.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>';
+          updateCounts();
+          return;
+        }
 
-        for (const note of state.notes) {
+        for (const note of notes) {
           const item = document.createElement("div");
-          item.className = "item";
+          item.className = `item note-item${note.pinned ? " pinned" : ""}`;
+          item.tabIndex = 0;
           item.innerHTML = `
             <div class="item-top">
               <div>
@@ -994,15 +1233,50 @@
                 <div class="meta">${formatDate(note.updatedAt)}</div>
               </div>
               <div class="mini-actions">
-                <button class="icon" type="button" title="열기">↗</button>
+                <button class="icon" data-pin type="button" title="${note.pinned ? "고정 해제" : "상단 고정"}">
+                  ${note.pinned ? "★" : "☆"}
+                </button>
               </div>
             </div>
           `;
-          item.querySelector(".item-title").textContent = note.title || "Untitled";
-          item.querySelector("button").addEventListener("click", () => openNote(note.id));
+          item.querySelector(".item-title").textContent =
+            note.title || "Untitled";
+          item
+            .querySelector("[data-pin]")
+            .addEventListener("click", (event) => {
+              event.stopPropagation();
+              toggleNotePin(note.id).catch((error) => showToast(error.message));
+            });
+          item.addEventListener("click", () => openNote(note.id));
+          item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openNote(note.id);
+            }
+          });
           list.appendChild(item);
         }
         updateCounts();
+      }
+
+      async function toggleNotePin(id) {
+        const note = state.notes.find((item) => item.id === id);
+        if (!note) return;
+
+        const data = await api("/api/notes", {
+          method: "POST",
+          body: JSON.stringify({
+            ...note,
+            pinned: !note.pinned,
+          }),
+        });
+
+        const index = state.notes.findIndex((item) => item.id === id);
+        if (index >= 0) state.notes[index] = data.note;
+        renderNotes();
+        showToast(
+          data.note.pinned ? "상단에 고정했습니다." : "고정을 해제했습니다.",
+        );
       }
 
       function fileActions(file) {
@@ -1034,7 +1308,8 @@
         if (!image) return;
         state.previewImageId = image.id;
         $("modalImageName").textContent = image.name;
-        $("modalImageMeta").textContent = `${formatBytes(image.size)} · ${formatDate(image.createdAt)}`;
+        $("modalImageMeta").textContent =
+          `${formatBytes(image.size)} · ${formatDate(image.createdAt)}`;
         $("modalImage").src = `/api/view?id=${encodeURIComponent(image.id)}`;
         $("modalImage").alt = image.name;
         $("imageModal").classList.remove("hidden");
@@ -1082,9 +1357,12 @@
               </div>
             </div>
           `;
-          card.querySelector("img").src = `/api/view?id=${encodeURIComponent(image.id)}`;
+          card.querySelector("img").src =
+            `/api/view?id=${encodeURIComponent(image.id)}`;
           card.querySelector("img").alt = image.name;
-          card.querySelector("img").addEventListener("click", () => openImagePreview(image.id));
+          card
+            .querySelector("img")
+            .addEventListener("click", () => openImagePreview(image.id));
           card.querySelector(".item-title").textContent = image.name;
           card.querySelector(".image-info").appendChild(fileActions(image));
           list.appendChild(card);
@@ -1128,7 +1406,10 @@
 
       async function loadAll() {
         setStatus("불러오는 중");
-        const [notesData, filesData] = await Promise.all([api("/api/notes"), api("/api/files")]);
+        const [notesData, filesData] = await Promise.all([
+          api("/api/notes"),
+          api("/api/files"),
+        ]);
         state.notes = notesData.notes || [];
         state.files = filesData.files || [];
         renderAll();
@@ -1143,7 +1424,12 @@
         setStatus("저장 중");
         const data = await api("/api/notes", {
           method: "POST",
-          body: JSON.stringify({ id: state.currentNoteId, title, body, bodyHtml }),
+          body: JSON.stringify({
+            id: state.currentNoteId,
+            title,
+            body,
+            bodyHtml,
+          }),
         });
         const index = state.notes.findIndex((note) => note.id === data.note.id);
         if (index >= 0) state.notes[index] = data.note;
@@ -1158,8 +1444,12 @@
       async function deleteCurrentNote() {
         if (!state.currentNoteId) return;
         if (!confirm("이 메모를 삭제할까요?")) return;
-        await api(`/api/notes?id=${encodeURIComponent(state.currentNoteId)}`, { method: "DELETE" });
-        state.notes = state.notes.filter((note) => note.id !== state.currentNoteId);
+        await api(`/api/notes?id=${encodeURIComponent(state.currentNoteId)}`, {
+          method: "DELETE",
+        });
+        state.notes = state.notes.filter(
+          (note) => note.id !== state.currentNoteId,
+        );
         resetEditor();
         renderNotes();
         showToast("메모를 삭제했습니다.");
@@ -1229,7 +1519,10 @@
         if (!file) return null;
 
         const extension = file.type.split("/")[1] || "png";
-        const name = file.name && file.name !== "image.png" ? file.name : `clipboard-${Date.now()}-${index}.${extension}`;
+        const name =
+          file.name && file.name !== "image.png"
+            ? file.name
+            : `clipboard-${Date.now()}-${index}.${extension}`;
         return new File([file], name, {
           type: file.type || "image/png",
           lastModified: Date.now(),
@@ -1246,7 +1539,10 @@
               showProgress(`${file.name} 업로드 중`, 0, true);
               return;
             }
-            showProgress(`${file.name} 업로드 중`, (event.loaded / event.total) * 100);
+            showProgress(
+              `${file.name} 업로드 중`,
+              (event.loaded / event.total) * 100,
+            );
           });
 
           xhr.addEventListener("load", () => {
@@ -1254,12 +1550,20 @@
               showProgress(`${file.name} 업로드 완료`, 100);
               resolve();
             } else {
-              reject(new Error("R2 업로드에 실패했습니다. R2 CORS 설정과 R2 키를 확인하세요."));
+              reject(
+                new Error(
+                  "R2 업로드에 실패했습니다. R2 CORS 설정과 R2 키를 확인하세요.",
+                ),
+              );
             }
           });
 
           xhr.addEventListener("error", () => {
-            reject(new Error(`R2 CORS에 ${window.location.origin} 주소를 추가하세요.`));
+            reject(
+              new Error(
+                `R2 CORS에 ${window.location.origin} 주소를 추가하세요.`,
+              ),
+            );
           });
 
           xhr.addEventListener("abort", () => {
@@ -1274,7 +1578,9 @@
         if (!confirm("이 항목을 삭제할까요?")) return;
         try {
           showProgress("삭제 중", 0, true);
-          await api(`/api/files?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+          await api(`/api/files?id=${encodeURIComponent(id)}`, {
+            method: "DELETE",
+          });
           state.files = state.files.filter((file) => file.id !== id);
           renderImages();
           renderFiles();
@@ -1314,7 +1620,9 @@
         });
 
         zone.addEventListener("drop", (event) => {
-          uploadMany(event.dataTransfer.files, expected).catch((error) => showToast(error.message));
+          uploadMany(event.dataTransfer.files, expected).catch((error) =>
+            showToast(error.message),
+          );
         });
       }
 
@@ -1338,30 +1646,59 @@
         button.addEventListener("click", () => setTab(button.dataset.tab));
       });
 
-      $("noteForm").addEventListener("submit", (event) => saveNote(event).catch((error) => showToast(error.message)));
-      $("deleteNoteButton").addEventListener("click", () => deleteCurrentNote().catch((error) => showToast(error.message)));
+      $("noteForm").addEventListener("submit", (event) =>
+        saveNote(event).catch((error) => showToast(error.message)),
+      );
+      $("deleteNoteButton").addEventListener("click", () =>
+        deleteCurrentNote().catch((error) => showToast(error.message)),
+      );
       $("newNoteButton").addEventListener("click", resetEditor);
+      $("noteSearch").addEventListener("input", (event) => {
+        state.noteQuery = event.target.value;
+        renderNotes();
+      });
+      $("noteBody").addEventListener("keydown", handleEditorEnter);
       document.querySelectorAll("[data-command]").forEach((button) => {
         button.addEventListener("click", () => {
           focusEditor();
           document.execCommand(button.dataset.command, false);
         });
       });
+      $("bulletListButton").addEventListener("click", () =>
+        insertList("bullet"),
+      );
+      $("numberListButton").addEventListener("click", () =>
+        insertList("ordered"),
+      );
       $("checklistButton").addEventListener("click", insertChecklistItem);
       $("linkButton").addEventListener("click", insertLink);
-      $("refreshButton").addEventListener("click", () => loadAll().catch((error) => showToast(error.message)));
+      $("refreshButton").addEventListener("click", () =>
+        loadAll().catch((error) => showToast(error.message)),
+      );
       $("logoutButton").addEventListener("click", async () => {
-        await api("/api/logout", { method: "POST", body: "{}" }).catch(() => {});
+        await api("/api/logout", { method: "POST", body: "{}" }).catch(
+          () => {},
+        );
         showLogin();
       });
       $("modalCloseButton").addEventListener("click", closeImagePreview);
       $("modalDownloadButton").addEventListener("click", downloadPreviewImage);
-      $("modalDeleteButton").addEventListener("click", () => deletePreviewImage().catch((error) => showToast(error.message)));
+      $("modalDeleteButton").addEventListener("click", () =>
+        deletePreviewImage().catch((error) => showToast(error.message)),
+      );
       $("imageModal").addEventListener("click", (event) => {
-        if (event.target.id === "imageModal" || event.target.id === "modalBackdrop") closeImagePreview();
+        if (
+          event.target.id === "imageModal" ||
+          event.target.id === "modalBackdrop"
+        )
+          closeImagePreview();
       });
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !$("imageModal").classList.contains("hidden")) closeImagePreview();
+        if (
+          event.key === "Escape" &&
+          !$("imageModal").classList.contains("hidden")
+        )
+          closeImagePreview();
       });
       document.addEventListener("paste", (event) => {
         const target = event.target;
@@ -1371,7 +1708,9 @@
           target?.isContentEditable;
         const items = Array.from(event.clipboardData?.items || []);
         const images = items
-          .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+          .filter(
+            (item) => item.kind === "file" && item.type.startsWith("image/"),
+          )
           .map(fileFromClipboardItem)
           .filter(Boolean);
 

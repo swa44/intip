@@ -1,8 +1,8 @@
 const crypto = require("crypto");
-const { requireAuth } = require("./_lib/auth");
-const { NOTES_KEY, readJson, writeJson } = require("./_lib/r2");
+const { requireAuth } = require("../../lib/auth");
+const { NOTES_KEY, readJson, writeJson } = require("../../lib/r2");
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (!requireAuth(req, res)) return;
 
   if (req.method === "GET") {
@@ -21,6 +21,7 @@ module.exports = async function handler(req, res) {
       title: String(input.title || "Untitled").slice(0, 160),
       body: String(input.body || ""),
       bodyHtml: String(input.bodyHtml || ""),
+      pinned: Boolean(input.pinned ?? (existing >= 0 ? notes[existing].pinned : false)),
       createdAt: existing >= 0 ? notes[existing].createdAt : now,
       updatedAt: now,
     };

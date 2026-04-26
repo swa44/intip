@@ -1,6 +1,6 @@
 # intip
 
-Personal notes and file storage for Vercel, backed by Cloudflare R2.
+Personal notes and file storage on Next.js/Vercel, backed by Cloudflare R2.
 
 ## Deploy On Vercel
 
@@ -16,7 +16,7 @@ Personal notes and file storage for Vercel, backed by Cloudflare R2.
    - `R2_BUCKET_NAME`: `intip`
 5. Deploy.
 
-No build command is required.
+Vercel will run the Next.js build automatically.
 
 ## R2 CORS
 
@@ -42,6 +42,8 @@ Copy `.env.example` to `.env.local`, then set your own values.
 npm install
 npm run dev
 ```
+
+For phone testing on the same Wi-Fi, open your Mac IP on port 3000.
 
 ## Notes
 

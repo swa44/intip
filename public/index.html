@@ -119,9 +119,20 @@
       }
 
       .rich-editor input[type="checkbox"] {
-        width: auto;
-        min-height: 0;
-        margin-right: 8px;
+        width: 20px;
+        height: 20px;
+        flex: 0 0 20px;
+        min-height: 20px;
+        margin: 3px 8px 0 0;
+        accent-color: var(--accent);
+      }
+
+      .rich-editor .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        min-height: 30px;
+        line-height: 1.7;
       }
 
       input:focus,
@@ -345,6 +356,10 @@
         overflow: auto;
       }
 
+      .search-box {
+        padding: 14px 14px 0;
+      }
+
       .item {
         display: grid;
         gap: 8px;
@@ -352,6 +367,20 @@
         border-radius: 8px;
         padding: 12px;
         background: var(--cream);
+      }
+
+      .note-item {
+        cursor: pointer;
+      }
+
+      .note-item:hover {
+        border-color: var(--accent);
+        background: #f2faf6;
+      }
+
+      .note-item.pinned {
+        border-color: rgba(17, 104, 92, 0.45);
+        background: var(--soft);
       }
 
       .item-top {
@@ -715,8 +744,8 @@
                   <button class="tool" data-command="bold" type="button" title="굵게">B</button>
                   <button class="tool" data-command="italic" type="button" title="기울임">I</button>
                   <button class="tool" data-command="underline" type="button" title="밑줄">U</button>
-                  <button class="tool" data-command="insertUnorderedList" type="button" title="목록">•</button>
-                  <button class="tool" data-command="insertOrderedList" type="button" title="번호 목록">1.</button>
+                  <button class="tool" id="bulletListButton" type="button" title="목록">•</button>
+                  <button class="tool" id="numberListButton" type="button" title="번호 목록">1.</button>
                   <button class="tool" id="checklistButton" type="button" title="체크박스">☑</button>
                   <button class="tool" id="linkButton" type="button" title="링크">↗</button>
                 </div>
@@ -737,6 +766,9 @@
               <div class="panel-head">
                 <h2>저장된 메모</h2>
                 <span class="meta" id="noteCount">0개</span>
+              </div>
+              <div class="search-box">
+                <input id="noteSearch" type="search" placeholder="제목이나 내용 검색" />
               </div>
               <div class="list" id="notesList"></div>
             </aside>
@@ -820,6 +852,7 @@
         files: [],
         currentNoteId: null,
         previewImageId: null,
+        noteQuery: "",
       };
 
       const $ = (id) => document.getElementById(id);
@@ -874,7 +907,8 @@
 
         const contentType = response.headers.get("Content-Type") || "";
         const data = contentType.includes("application/json") ? await response.json() : null;
-        if (!response.ok) throw new Error(data?.error || "요청에 실패했습니다.");
+        const text = data ? "" : await response.text().catch(() => "");
+        if (!response.ok) throw new Error(data?.error || text || `요청에 실패했습니다. (${response.status})`);
         return data;
       }
 
@@ -954,6 +988,16 @@
         return escapeHtml(value).replace(/\n/g, "<br>");
       }
 
+      function htmlToText(value) {
+        const div = document.createElement("div");
+        div.innerHTML = value || "";
+        return div.innerText || div.textContent || "";
+      }
+
+      function searchableNoteText(note) {
+        return `${note.title || ""} ${note.body || ""} ${htmlToText(note.bodyHtml || "")}`.toLowerCase();
+      }
+
       function focusEditor() {
         $("noteBody").focus();
       }
@@ -963,7 +1007,7 @@
         document.execCommand(
           "insertHTML",
           false,
-          '<div><label><input type="checkbox"> <span>체크 항목</span></label></div>',
+          '<div class="check-row"><input type="checkbox"><span>&nbsp;</span></div>',
         );
       }
 
@@ -975,18 +1019,86 @@
         document.execCommand("createLink", false, safeUrl);
       }
 
+      function insertList(type) {
+        focusEditor();
+        const tag = type === "ordered" ? "ol" : "ul";
+        document.execCommand("insertHTML", false, `<${tag}><li>&nbsp;</li></${tag}><div><br></div>`);
+        const selection = window.getSelection();
+        const listItem = selection.anchorNode?.parentElement?.closest?.("li");
+        if (listItem) placeCaretAtStart(listItem);
+      }
+
+      function closestBlock(node) {
+        let current = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        while (current && current !== $("noteBody")) {
+          if (["DIV", "P", "LI"].includes(current.tagName)) return current;
+          current = current.parentElement;
+        }
+        return null;
+      }
+
+      function isEffectivelyEmpty(element) {
+        return !element || element.innerText.replace(/\u00a0/g, " ").trim() === "";
+      }
+
+      function placeCaretAtStart(element) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.setStart(element, 0);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function handleEditorEnter(event) {
+        if (event.key !== "Enter" || event.shiftKey) return;
+
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const block = closestBlock(selection.anchorNode);
+        if (block?.classList.contains("check-row")) {
+          event.preventDefault();
+          block.insertAdjacentHTML("afterend", '<div class="check-row"><input type="checkbox"><span>&nbsp;</span></div>');
+          placeCaretAtStart(block.nextElementSibling.querySelector("span"));
+          return;
+        }
+
+        const listItem = block?.tagName === "LI" ? block : selection.anchorNode?.parentElement?.closest?.("li");
+        if (listItem && isEffectivelyEmpty(listItem)) {
+          event.preventDefault();
+          document.execCommand("outdent", false);
+          document.execCommand("formatBlock", false, "div");
+        }
+      }
+
       function renderNotes() {
         const list = $("notesList");
+        const query = state.noteQuery.trim().toLowerCase();
+        const notes = (query
+          ? state.notes.filter((note) => searchableNoteText(note).includes(query))
+          : state.notes
+        ).toSorted((a, b) => {
+          if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+          return new Date(b.updatedAt) - new Date(a.updatedAt);
+        });
+
         list.innerHTML = "";
         if (!state.notes.length) {
           list.innerHTML = '<div class="empty">아직 메모가 없습니다.</div>';
           updateCounts();
           return;
         }
+        if (!notes.length) {
+          list.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>';
+          updateCounts();
+          return;
+        }
 
-        for (const note of state.notes) {
+        for (const note of notes) {
           const item = document.createElement("div");
-          item.className = "item";
+          item.className = `item note-item${note.pinned ? " pinned" : ""}`;
+          item.tabIndex = 0;
           item.innerHTML = `
             <div class="item-top">
               <div>
@@ -994,15 +1106,45 @@
                 <div class="meta">${formatDate(note.updatedAt)}</div>
               </div>
               <div class="mini-actions">
-                <button class="icon" type="button" title="열기">↗</button>
+                <button class="icon" data-pin type="button" title="${note.pinned ? "고정 해제" : "상단 고정"}">
+                  ${note.pinned ? "★" : "☆"}
+                </button>
               </div>
             </div>
           `;
           item.querySelector(".item-title").textContent = note.title || "Untitled";
-          item.querySelector("button").addEventListener("click", () => openNote(note.id));
+          item.querySelector("[data-pin]").addEventListener("click", (event) => {
+            event.stopPropagation();
+            toggleNotePin(note.id).catch((error) => showToast(error.message));
+          });
+          item.addEventListener("click", () => openNote(note.id));
+          item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openNote(note.id);
+            }
+          });
           list.appendChild(item);
         }
         updateCounts();
+      }
+
+      async function toggleNotePin(id) {
+        const note = state.notes.find((item) => item.id === id);
+        if (!note) return;
+
+        const data = await api("/api/notes", {
+          method: "POST",
+          body: JSON.stringify({
+            ...note,
+            pinned: !note.pinned,
+          }),
+        });
+
+        const index = state.notes.findIndex((item) => item.id === id);
+        if (index >= 0) state.notes[index] = data.note;
+        renderNotes();
+        showToast(data.note.pinned ? "상단에 고정했습니다." : "고정을 해제했습니다.");
       }
 
       function fileActions(file) {
@@ -1341,12 +1483,19 @@
       $("noteForm").addEventListener("submit", (event) => saveNote(event).catch((error) => showToast(error.message)));
       $("deleteNoteButton").addEventListener("click", () => deleteCurrentNote().catch((error) => showToast(error.message)));
       $("newNoteButton").addEventListener("click", resetEditor);
+      $("noteSearch").addEventListener("input", (event) => {
+        state.noteQuery = event.target.value;
+        renderNotes();
+      });
+      $("noteBody").addEventListener("keydown", handleEditorEnter);
       document.querySelectorAll("[data-command]").forEach((button) => {
         button.addEventListener("click", () => {
           focusEditor();
           document.execCommand(button.dataset.command, false);
         });
       });
+      $("bulletListButton").addEventListener("click", () => insertList("bullet"));
+      $("numberListButton").addEventListener("click", () => insertList("ordered"));
       $("checklistButton").addEventListener("click", insertChecklistItem);
       $("linkButton").addEventListener("click", insertLink);
       $("refreshButton").addEventListener("click", () => loadAll().catch((error) => showToast(error.message)));

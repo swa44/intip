@@ -1,6 +1,6 @@
-const { clearSessionCookie } = require("./_lib/auth");
+const { clearSessionCookie } = require("../../lib/auth");
 
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
   res.setHeader("Set-Cookie", clearSessionCookie());
