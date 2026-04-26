@@ -71,6 +71,59 @@
         resize: vertical;
       }
 
+      .editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tool {
+        min-width: 40px;
+        min-height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        font-weight: 900;
+      }
+
+      .tool:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .rich-editor {
+        min-height: 360px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        line-height: 1.7;
+        outline: none;
+        overflow: auto;
+      }
+
+      .rich-editor:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(17, 104, 92, 0.13);
+      }
+
+      .rich-editor:empty::before {
+        content: attr(data-placeholder);
+        color: var(--muted);
+      }
+
+      .rich-editor ul,
+      .rich-editor ol {
+        padding-left: 24px;
+      }
+
+      .rich-editor input[type="checkbox"] {
+        width: auto;
+        min-height: 0;
+        margin-right: 8px;
+      }
+
       input:focus,
       textarea:focus {
         border-color: var(--accent);
@@ -396,6 +449,7 @@
         aspect-ratio: 4 / 3;
         object-fit: cover;
         background: var(--soft);
+        cursor: zoom-in;
       }
 
       .image-info {
@@ -434,6 +488,147 @@
       .toast.show {
         transform: translateY(0);
         opacity: 1;
+      }
+
+      .progress {
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        z-index: 25;
+        width: min(360px, calc(100% - 36px));
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 14px;
+      }
+
+      .progress-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .progress-label {
+        min-width: 0;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 900;
+        overflow-wrap: anywhere;
+      }
+
+      .progress-percent {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .progress-track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--soft);
+      }
+
+      .progress-bar {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        transition: width 0.16s ease;
+      }
+
+      .progress.indeterminate .progress-bar {
+        width: 42%;
+        animation: progress-slide 1s ease-in-out infinite;
+      }
+
+      .spinner {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        border: 3px solid var(--soft);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes progress-slide {
+        0% {
+          transform: translateX(-110%);
+        }
+        100% {
+          transform: translateX(260%);
+        }
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 12px;
+        background: rgba(20, 18, 15, 0.86);
+        padding: 18px;
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #fff;
+      }
+
+      .modal-title {
+        min-width: 0;
+      }
+
+      .modal-title h2 {
+        margin: 0;
+        font-size: 17px;
+        overflow-wrap: anywhere;
+      }
+
+      .modal-title p {
+        margin: 4px 0 0;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+      }
+
+      .modal-body {
+        display: grid;
+        place-items: center;
+        min-height: 0;
+      }
+
+      .modal-image {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #111;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.38);
+      }
+
+      .modal .ghost {
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+      }
+
+      .modal .danger {
+        background: rgba(248, 230, 223, 0.95);
       }
 
       @media (max-width: 820px) {
@@ -516,7 +711,21 @@
               </div>
               <form class="editor" id="noteForm">
                 <input id="noteTitle" type="text" placeholder="제목" maxlength="160" />
-                <textarea id="noteBody" placeholder="여기에 적어두세요."></textarea>
+                <div class="editor-toolbar" aria-label="메모 편집 도구">
+                  <button class="tool" data-command="bold" type="button" title="굵게">B</button>
+                  <button class="tool" data-command="italic" type="button" title="기울임">I</button>
+                  <button class="tool" data-command="underline" type="button" title="밑줄">U</button>
+                  <button class="tool" data-command="insertUnorderedList" type="button" title="목록">•</button>
+                  <button class="tool" data-command="insertOrderedList" type="button" title="번호 목록">1.</button>
+                  <button class="tool" id="checklistButton" type="button" title="체크박스">☑</button>
+                  <button class="tool" id="linkButton" type="button" title="링크">↗</button>
+                </div>
+                <div
+                  class="rich-editor"
+                  id="noteBody"
+                  contenteditable="true"
+                  data-placeholder="여기에 적어두세요."
+                ></div>
                 <div class="actions">
                   <button class="primary" type="submit">저장</button>
                   <button class="danger" id="deleteNoteButton" type="button">삭제</button>
@@ -545,7 +754,7 @@
                 <input id="imageInput" type="file" accept="image/*" multiple />
                 <span>
                   <strong>이미지를 끌어오거나 클릭해서 업로드</strong>
-                  <p>여러 장을 한 번에 올릴 수 있습니다.</p>
+                  <p>캡쳐 후 Ctrl/Cmd+V로 바로 붙여넣을 수도 있습니다.</p>
                 </span>
               </label>
             </div>
@@ -576,12 +785,41 @@
 
     <div class="toast" id="toast"></div>
 
+    <div class="progress hidden" id="progressBox" aria-live="polite">
+      <div class="progress-top">
+        <div class="spinner hidden" id="progressSpinner"></div>
+        <div class="progress-label" id="progressLabel">처리 중</div>
+        <div class="progress-percent" id="progressPercent">0%</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <section class="modal hidden" id="imageModal" aria-modal="true" role="dialog">
+      <div class="modal-head">
+        <div class="modal-title">
+          <h2 id="modalImageName">이미지</h2>
+          <p id="modalImageMeta"></p>
+        </div>
+        <div class="actions">
+          <button class="ghost" id="modalDownloadButton" type="button">다운로드</button>
+          <button class="danger" id="modalDeleteButton" type="button">삭제</button>
+          <button class="ghost" id="modalCloseButton" type="button">닫기</button>
+        </div>
+      </div>
+      <div class="modal-body" id="modalBackdrop">
+        <img class="modal-image" id="modalImage" alt="" />
+      </div>
+    </section>
+
     <script>
       const state = {
         activeTab: "notes",
         notes: [],
         files: [],
         currentNoteId: null,
+        previewImageId: null,
       };
 
       const $ = (id) => document.getElementById(id);
@@ -599,6 +837,25 @@
 
       function setStatus(message) {
         $("syncStatus").textContent = message;
+      }
+
+      function showProgress(label, percent = 0, indeterminate = false) {
+        $("progressBox").classList.remove("hidden");
+        $("progressBox").classList.toggle("indeterminate", indeterminate);
+        $("progressSpinner").classList.toggle("hidden", !indeterminate);
+        $("progressLabel").textContent = label;
+        $("progressPercent").textContent = indeterminate ? "" : `${Math.max(0, Math.min(100, Math.round(percent)))}%`;
+        $("progressBar").style.width = indeterminate ? "" : `${Math.max(0, Math.min(100, percent))}%`;
+      }
+
+      function hideProgress(delay = 450) {
+        window.clearTimeout(hideProgress.timer);
+        hideProgress.timer = window.setTimeout(() => {
+          $("progressBox").classList.add("hidden");
+          $("progressBox").classList.remove("indeterminate");
+          $("progressBar").style.width = "0%";
+          $("progressPercent").textContent = "0%";
+        }, delay);
       }
 
       async function api(path, options = {}) {
@@ -673,7 +930,7 @@
       function resetEditor() {
         state.currentNoteId = null;
         $("noteTitle").value = "";
-        $("noteBody").value = "";
+        $("noteBody").innerHTML = "";
         $("deleteNoteButton").disabled = true;
       }
 
@@ -682,9 +939,40 @@
         if (!note) return;
         state.currentNoteId = note.id;
         $("noteTitle").value = note.title;
-        $("noteBody").value = note.body;
+        $("noteBody").innerHTML = note.bodyHtml || textToHtml(note.body || "");
         $("deleteNoteButton").disabled = false;
         setTab("notes");
+      }
+
+      function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = value;
+        return div.innerHTML;
+      }
+
+      function textToHtml(value) {
+        return escapeHtml(value).replace(/\n/g, "<br>");
+      }
+
+      function focusEditor() {
+        $("noteBody").focus();
+      }
+
+      function insertChecklistItem() {
+        focusEditor();
+        document.execCommand(
+          "insertHTML",
+          false,
+          '<div><label><input type="checkbox"> <span>체크 항목</span></label></div>',
+        );
+      }
+
+      function insertLink() {
+        focusEditor();
+        const url = prompt("링크 주소를 입력하세요.");
+        if (!url) return;
+        const safeUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+        document.execCommand("createLink", false, safeUrl);
       }
 
       function renderNotes() {
@@ -741,6 +1029,37 @@
         return actions;
       }
 
+      function openImagePreview(id) {
+        const image = state.files.find((file) => file.id === id);
+        if (!image) return;
+        state.previewImageId = image.id;
+        $("modalImageName").textContent = image.name;
+        $("modalImageMeta").textContent = `${formatBytes(image.size)} · ${formatDate(image.createdAt)}`;
+        $("modalImage").src = `/api/view?id=${encodeURIComponent(image.id)}`;
+        $("modalImage").alt = image.name;
+        $("imageModal").classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeImagePreview() {
+        state.previewImageId = null;
+        $("imageModal").classList.add("hidden");
+        $("modalImage").removeAttribute("src");
+        document.body.style.overflow = "";
+      }
+
+      function downloadPreviewImage() {
+        if (!state.previewImageId) return;
+        window.location.href = `/api/download?id=${encodeURIComponent(state.previewImageId)}`;
+      }
+
+      async function deletePreviewImage() {
+        if (!state.previewImageId) return;
+        const id = state.previewImageId;
+        closeImagePreview();
+        await deleteFile(id);
+      }
+
       function renderImages() {
         const list = $("imagesList");
         const images = storedImages();
@@ -765,6 +1084,7 @@
           `;
           card.querySelector("img").src = `/api/view?id=${encodeURIComponent(image.id)}`;
           card.querySelector("img").alt = image.name;
+          card.querySelector("img").addEventListener("click", () => openImagePreview(image.id));
           card.querySelector(".item-title").textContent = image.name;
           card.querySelector(".image-info").appendChild(fileActions(image));
           list.appendChild(card);
@@ -818,11 +1138,12 @@
       async function saveNote(event) {
         event.preventDefault();
         const title = $("noteTitle").value.trim() || "Untitled";
-        const body = $("noteBody").value;
+        const bodyHtml = $("noteBody").innerHTML.trim();
+        const body = $("noteBody").innerText.trim();
         setStatus("저장 중");
         const data = await api("/api/notes", {
           method: "POST",
-          body: JSON.stringify({ id: state.currentNoteId, title, body }),
+          body: JSON.stringify({ id: state.currentNoteId, title, body, bodyHtml }),
         });
         const index = state.notes.findIndex((note) => note.id === data.note.id);
         if (index >= 0) state.notes[index] = data.note;
@@ -862,16 +1183,7 @@
           }),
         });
 
-        let upload;
-        try {
-          upload = await fetch(signed.uploadUrl, {
-            method: "PUT",
-            body: file,
-          });
-        } catch {
-          throw new Error(`R2 CORS에 ${window.location.origin} 주소를 추가하세요.`);
-        }
-        if (!upload.ok) throw new Error("R2 업로드에 실패했습니다. R2 CORS 설정을 확인하세요.");
+        await uploadToR2(signed.uploadUrl, file);
 
         const data = await api("/api/files", {
           method: "POST",
@@ -887,29 +1199,92 @@
         const files = Array.from(fileList || []);
         if (!files.length) return;
 
-        setStatus("업로드 중");
-        let uploaded = 0;
-        for (const file of files) {
-          const record = await uploadOne(file, expected);
-          if (!state.files.some((item) => item.id === record.id)) {
-            state.files.unshift(record);
+        try {
+          setStatus("업로드 중");
+          let uploaded = 0;
+          for (const file of files) {
+            showProgress(`${file.name} 업로드 중`, 0);
+            const record = await uploadOne(file, expected);
+            if (!state.files.some((item) => item.id === record.id)) {
+              state.files.unshift(record);
+            }
+            uploaded += 1;
+            setStatus(`${uploaded}/${files.length} 업로드`);
           }
-          uploaded += 1;
-          setStatus(`${uploaded}/${files.length} 업로드`);
+          renderImages();
+          renderFiles();
+          setStatus("저장됨");
+          showProgress("업로드 완료", 100);
+          hideProgress();
+          showToast(`${uploaded}개를 업로드했습니다.`);
+        } catch (error) {
+          setStatus("업로드 실패");
+          hideProgress(0);
+          throw error;
         }
-        renderImages();
-        renderFiles();
-        setStatus("저장됨");
-        showToast(`${uploaded}개를 업로드했습니다.`);
+      }
+
+      function fileFromClipboardItem(item, index) {
+        const file = item.getAsFile();
+        if (!file) return null;
+
+        const extension = file.type.split("/")[1] || "png";
+        const name = file.name && file.name !== "image.png" ? file.name : `clipboard-${Date.now()}-${index}.${extension}`;
+        return new File([file], name, {
+          type: file.type || "image/png",
+          lastModified: Date.now(),
+        });
+      }
+
+      function uploadToR2(url, file) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", url);
+
+          xhr.upload.addEventListener("progress", (event) => {
+            if (!event.lengthComputable) {
+              showProgress(`${file.name} 업로드 중`, 0, true);
+              return;
+            }
+            showProgress(`${file.name} 업로드 중`, (event.loaded / event.total) * 100);
+          });
+
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              showProgress(`${file.name} 업로드 완료`, 100);
+              resolve();
+            } else {
+              reject(new Error("R2 업로드에 실패했습니다. R2 CORS 설정과 R2 키를 확인하세요."));
+            }
+          });
+
+          xhr.addEventListener("error", () => {
+            reject(new Error(`R2 CORS에 ${window.location.origin} 주소를 추가하세요.`));
+          });
+
+          xhr.addEventListener("abort", () => {
+            reject(new Error("업로드가 취소되었습니다."));
+          });
+
+          xhr.send(file);
+        });
       }
 
       async function deleteFile(id) {
         if (!confirm("이 항목을 삭제할까요?")) return;
-        await api(`/api/files?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-        state.files = state.files.filter((file) => file.id !== id);
-        renderImages();
-        renderFiles();
-        showToast("삭제했습니다.");
+        try {
+          showProgress("삭제 중", 0, true);
+          await api(`/api/files?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+          state.files = state.files.filter((file) => file.id !== id);
+          renderImages();
+          renderFiles();
+          showProgress("삭제 완료", 100);
+          hideProgress();
+          showToast("삭제했습니다.");
+        } catch (error) {
+          hideProgress(0);
+          throw error;
+        }
       }
 
       function bindDropzone(zoneId, inputId, expected) {
@@ -966,10 +1341,46 @@
       $("noteForm").addEventListener("submit", (event) => saveNote(event).catch((error) => showToast(error.message)));
       $("deleteNoteButton").addEventListener("click", () => deleteCurrentNote().catch((error) => showToast(error.message)));
       $("newNoteButton").addEventListener("click", resetEditor);
+      document.querySelectorAll("[data-command]").forEach((button) => {
+        button.addEventListener("click", () => {
+          focusEditor();
+          document.execCommand(button.dataset.command, false);
+        });
+      });
+      $("checklistButton").addEventListener("click", insertChecklistItem);
+      $("linkButton").addEventListener("click", insertLink);
       $("refreshButton").addEventListener("click", () => loadAll().catch((error) => showToast(error.message)));
       $("logoutButton").addEventListener("click", async () => {
         await api("/api/logout", { method: "POST", body: "{}" }).catch(() => {});
         showLogin();
+      });
+      $("modalCloseButton").addEventListener("click", closeImagePreview);
+      $("modalDownloadButton").addEventListener("click", downloadPreviewImage);
+      $("modalDeleteButton").addEventListener("click", () => deletePreviewImage().catch((error) => showToast(error.message)));
+      $("imageModal").addEventListener("click", (event) => {
+        if (event.target.id === "imageModal" || event.target.id === "modalBackdrop") closeImagePreview();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !$("imageModal").classList.contains("hidden")) closeImagePreview();
+      });
+      document.addEventListener("paste", (event) => {
+        const target = event.target;
+        const isTextInput =
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement ||
+          target?.isContentEditable;
+        const items = Array.from(event.clipboardData?.items || []);
+        const images = items
+          .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+          .map(fileFromClipboardItem)
+          .filter(Boolean);
+
+        if (!images.length) return;
+        if (isTextInput && state.activeTab === "notes") return;
+
+        event.preventDefault();
+        setTab("images");
+        uploadMany(images, "image").catch((error) => showToast(error.message));
       });
       bindDropzone("imageDropzone", "imageInput", "image");
       bindDropzone("fileDropzone", "fileInput", "file");

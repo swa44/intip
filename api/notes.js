@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
       id,
       title: String(input.title || "Untitled").slice(0, 160),
       body: String(input.body || ""),
+      bodyHtml: String(input.bodyHtml || ""),
       createdAt: existing >= 0 ? notes[existing].createdAt : now,
       updatedAt: now,
     };
