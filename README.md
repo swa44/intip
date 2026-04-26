@@ -1,36 +1,47 @@
 # intip
 
-Personal notes and file storage for Cloudflare Pages.
+Personal notes and file storage for Vercel, backed by Cloudflare R2.
 
-## Deploy
+## Deploy On Vercel
 
 1. Create a Cloudflare R2 bucket named `intip`.
-2. In Cloudflare Pages, set the project root to this folder.
-3. Set build output directory to `public`.
-4. Add the R2 binding:
-   - Binding name: `INTIP_BUCKET`
-   - Bucket: `intip`
-5. Add environment variables:
+2. Create an R2 API token with read/write access for the bucket.
+3. In Vercel, set the project root to this folder.
+4. Add environment variables:
    - `INTIP_PASSWORD`: login password
    - `INTIP_SESSION_SECRET`: long random secret for session cookies
+   - `R2_ACCOUNT_ID`: Cloudflare account ID
+   - `R2_ACCESS_KEY_ID`: R2 access key
+   - `R2_SECRET_ACCESS_KEY`: R2 secret key
+   - `R2_BUCKET_NAME`: `intip`
+5. Deploy.
 
-No build command is required. If using Wrangler:
+No build command is required.
 
-```bash
-npm install
-npm run deploy
+## R2 CORS
+
+Direct browser uploads require CORS on the R2 bucket. Allow your Vercel domain:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://your-domain.com"],
+    "AllowedMethods": ["GET", "PUT"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
 ```
 
 ## Local Dev
 
-Copy `.dev.vars.example` to `.dev.vars`, then set your own values.
+Copy `.env.example` to `.env.local`, then set your own values.
 
 ```bash
 npm install
 npm run dev
 ```
-
-Open the local URL printed by Wrangler.
 
 ## Notes
 
@@ -39,3 +50,4 @@ Open the local URL printed by Wrangler.
 - Notes are stored in R2 as `app/notes.json`.
 - File metadata is stored in R2 as `app/files.json`.
 - Uploaded files are stored under `uploads/`.
+- Uploads and downloads use signed R2 URLs, so large files do not pass through Vercel Functions.

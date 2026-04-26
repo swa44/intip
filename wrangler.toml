@@ -1,8 +1,0 @@
-name = "intip"
-compatibility_date = "2026-04-27"
-pages_build_output_dir = "public"
-
-[[r2_buckets]]
-binding = "INTIP_BUCKET"
-bucket_name = "intip"
-
