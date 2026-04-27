@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>intip</title>
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#11685c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="intip" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
     <style>
       :root {
         color-scheme: light;
@@ -1725,6 +1731,10 @@
       bindDropzone("fileDropzone", "fileInput", "file");
 
       (async function boot() {
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        }
+
         resetEditor();
         try {
           const session = await api("/api/session");
