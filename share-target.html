@@ -91,10 +91,43 @@
         margin-top: 18px;
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
 
       .hidden {
         display: none;
+      }
+
+      .list {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fcfbf8;
+        overflow: hidden;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-top: 1px solid var(--line);
+      }
+
+      .row:first-child {
+        border-top: 0;
+      }
+
+      .row-name {
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .row-meta {
+        color: var(--muted);
+        font-size: 0.92rem;
+        white-space: nowrap;
       }
 
       a,
@@ -129,8 +162,11 @@
         <div class="bar" id="bar"></div>
       </div>
       <div class="meta" id="meta">잠시만 기다려주세요.</div>
+      <div class="list hidden" id="filesList"></div>
       <div class="actions">
         <a href="/" id="homeLink">홈으로</a>
+        <button class="hidden" id="uploadButton" type="button">업로드</button>
+        <button class="ghost hidden" id="cancelButton" type="button">취소</button>
         <button class="ghost hidden" id="retryButton" type="button">다시 시도</button>
       </div>
     </main>
@@ -170,6 +206,11 @@
       };
 
       const $ = (id) => document.getElementById(id);
+      const shareState = {
+        batchId: "",
+        records: [],
+        uploaded: false,
+      };
 
       function extensionOf(name) {
         const value = String(name || "").trim().toLowerCase();
@@ -189,6 +230,20 @@
         $("message").textContent = message;
         $("meta").textContent = meta;
         $("bar").style.width = percent == null ? "8%" : `${Math.max(0, Math.min(100, percent))}%`;
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        const index = Math.min(
+          Math.floor(Math.log(bytes) / Math.log(1024)),
+          units.length - 1,
+        );
+        return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => window.setTimeout(resolve, ms));
       }
 
       function openShareTargetPage(targetUrl) {
@@ -303,6 +358,83 @@
         db.close();
       }
 
+      async function waitForSharedRecords(batchId) {
+        const attempts = batchId ? 12 : 2;
+        const delays = [0, 120, 250, 400, 650, 900, 1200, 1600, 2000, 2400, 2800, 3200];
+
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+          if (attempt > 0) {
+            await sleep(delays[Math.min(attempt, delays.length - 1)]);
+          }
+
+          const records = await getSharedRecords(batchId);
+          if (records.length) return records;
+
+          if (batchId) {
+            setStatus(
+              "공유 파일 준비 중",
+              "앱으로 전달된 파일을 확인하고 있어요.",
+              `${attempt + 1}/${attempts} 준비 확인 중`,
+              Math.min(90, 8 + attempt * 6),
+            );
+          }
+        }
+
+        return [];
+      }
+
+      function renderSharedRecords(records) {
+        const list = $("filesList");
+        list.innerHTML = "";
+        if (!records.length) {
+          list.classList.add("hidden");
+          return;
+        }
+
+        for (const record of records) {
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `
+            <div class="row-name"></div>
+            <div class="row-meta"></div>
+          `;
+          row.querySelector(".row-name").textContent =
+            record.name || record.file?.name || "shared-file";
+          row.querySelector(".row-meta").textContent = `${formatBytes(record.size || record.file?.size || 0)} · ${record.type || "unknown"}`;
+          list.appendChild(row);
+        }
+
+        list.classList.remove("hidden");
+      }
+
+      function showReadyState(records, batchId) {
+        shareState.records = records;
+        shareState.batchId = batchId;
+        shareState.uploaded = false;
+        $("message").classList.remove("error");
+        $("retryButton").classList.add("hidden");
+        $("uploadButton").classList.remove("hidden");
+        $("cancelButton").classList.remove("hidden");
+        renderSharedRecords(records);
+        setStatus(
+          "공유 파일 확인",
+          "업로드할 파일을 확인한 뒤 버튼을 눌러 주세요.",
+          `${records.length}개 파일 준비됨`,
+          0,
+        );
+      }
+
+      function setUploadingState() {
+        $("uploadButton").disabled = true;
+        $("cancelButton").disabled = true;
+        $("retryButton").classList.add("hidden");
+      }
+
+      function resetActionButtons() {
+        $("uploadButton").disabled = false;
+        $("cancelButton").disabled = false;
+      }
+
       function uploadToR2(url, file, onProgress) {
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
@@ -382,18 +514,12 @@
         return data.file;
       }
 
-      async function uploadSharedRecords(batchId) {
-        const records = await getSharedRecords(batchId);
-        if (!records.length) {
-          setStatus("공유할 파일이 없어요", "새로 공유한 파일이 아직 없거나 이미 처리되었어요.", "홈으로 돌아갈게요.", 100);
-          window.setTimeout(() => {
-            window.location.replace("/");
-          }, 500);
-          return;
-        }
+      async function uploadSharedRecords(records, batchId) {
+        if (!records.length) return;
 
         const succeededIds = [];
         const failures = [];
+        setUploadingState();
 
         for (const [index, record] of records.entries()) {
           try {
@@ -422,9 +548,13 @@
             first.message,
             100,
           );
+          resetActionButtons();
           return;
         }
 
+        shareState.uploaded = true;
+        $("uploadButton").classList.add("hidden");
+        $("cancelButton").classList.add("hidden");
         setStatus(
           "공유 완료",
           `${records.length}개 파일을 저장했어요.`,
@@ -467,7 +597,21 @@
             return;
           }
 
-          await uploadSharedRecords(params.get("batch") || "");
+          const batchId = params.get("batch") || "";
+          const records = await waitForSharedRecords(batchId);
+          if (!records.length) {
+            $("retryButton").classList.remove("hidden");
+            $("message").classList.add("error");
+            setStatus(
+              "공유 준비 실패",
+              "공유 파일을 찾지 못했어요.",
+              batchId ? "공유 파일 준비가 늦어지고 있어요. 다시 시도해 주세요." : "새로 공유한 파일이 아직 없거나 이미 처리되었어요.",
+              100,
+            );
+            return;
+          }
+
+          showReadyState(records, batchId);
         } catch (error) {
           $("retryButton").classList.remove("hidden");
           $("message").classList.add("error");
@@ -480,6 +624,19 @@
         $("message").classList.remove("error");
         setStatus("다시 시도 중", "공유 파일을 다시 확인하고 있어요.", "잠시만 기다려주세요.", 12);
         boot();
+      });
+
+      $("uploadButton").addEventListener("click", () => {
+        uploadSharedRecords(shareState.records, shareState.batchId).catch((error) => {
+          $("retryButton").classList.remove("hidden");
+          $("message").classList.add("error");
+          setStatus("공유 처리 실패", "공유 업로드 중 문제가 생겼어요.", error.message, 100);
+          resetActionButtons();
+        });
+      });
+
+      $("cancelButton").addEventListener("click", () => {
+        window.location.replace("/");
       });
 
       if ("serviceWorker" in navigator) {
