@@ -1906,10 +1906,6 @@ function fileFromClipboardItem(item, index) {
         resetEditor();
 
         const params = new URLSearchParams(window.location.search);
-        if (params.has("share_error")) {
-          showToast(`공유 오류: ${params.get("share_error")}`);
-          history.replaceState(null, "", window.location.pathname);
-        }
 
         try {
           const session = await api("/api/session");

@@ -15,12 +15,9 @@ function openShareDb() {
 async function saveSharedFiles(files, meta = {}) {
   if (!files.length) return;
 
-  // Read all bytes into memory FIRST, before any async gap.
-  // Files from drawing/third-party apps arrive via FileProvider URIs (Android)
-  // whose permissions can be revoked at any time. Calling arrayBuffer() here
-  // captures the raw bytes while we still have access, so IndexedDB stores
-  // plain ArrayBuffers — no URI dependency at all.
-  const entries = await Promise.all(
+  // Read each file's bytes eagerly while share permissions are still valid.
+  // Use allSettled so a single unreadable file doesn't abort the whole batch.
+  const results = await Promise.allSettled(
     files.map(async (file, i) => {
       const bytes = await file.arrayBuffer();
       const createdAt = Date.now();
@@ -36,6 +33,12 @@ async function saveSharedFiles(files, meta = {}) {
       };
     })
   );
+
+  const entries = results
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => r.value);
+
+  if (!entries.length) return;
 
   const db = await openShareDb();
   await new Promise((resolve, reject) => {
@@ -68,25 +71,33 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname === "/share-target" && event.request.method === "POST") {
     event.respondWith(
       (async () => {
+        const redirectUrl = `/?shared=1&t=${Date.now()}`;
         try {
-          const formData = await event.request.formData();
-          const files = formData
-            .getAll("sharedFiles")
-            .filter((item) => item instanceof Blob && item.size > 0);
+          let files = [];
+          let meta = {};
 
-          await saveSharedFiles(files, {
-            title: formData.get("title") || "",
-            text: formData.get("text") || "",
-          });
+          try {
+            const formData = await event.request.formData();
+            files = formData
+              .getAll("sharedFiles")
+              .filter((item) => item instanceof Blob && item.size > 0);
+            meta = {
+              title: formData.get("title") || "",
+              text: formData.get("text") || "",
+            };
+          } catch (formErr) {
+            // formData() failed — body may be unreadable (e.g. expired content URI).
+            // Redirect normally; the app will open without files.
+            console.error("[SW] formData() failed:", formErr);
+            return Response.redirect(redirectUrl, 303);
+          }
 
-          return Response.redirect(`/?shared=1&t=${Date.now()}`, 303);
+          await saveSharedFiles(files, meta);
         } catch (err) {
           console.error("[SW] share-target error:", err);
-          return Response.redirect(
-            `/?share_error=${encodeURIComponent(err.message || "unknown")}&t=${Date.now()}`,
-            303,
-          );
         }
+
+        return Response.redirect(redirectUrl, 303);
       })(),
     );
     return;
