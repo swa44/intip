@@ -974,6 +974,7 @@
       const SHARE_DB = "intip-share-target";
       const SHARE_STORE = "shared-files";
       let sharedUploadInFlight = null;
+      let sharedUploadQueued = false;
 
       const $ = (id) => document.getElementById(id);
       const isImage = (file) => String(file.type || "").startsWith("image/");
@@ -1651,9 +1652,17 @@
       }
 
       async function flushSharedRecords() {
-        if (sharedUploadInFlight) return sharedUploadInFlight;
+        if (sharedUploadInFlight) {
+          sharedUploadQueued = true;
+          return sharedUploadInFlight;
+        }
 
-        sharedUploadInFlight = uploadSharedRecords().finally(() => {
+        sharedUploadInFlight = (async () => {
+          do {
+            sharedUploadQueued = false;
+            await uploadSharedRecords();
+          } while (sharedUploadQueued);
+        })().finally(() => {
           sharedUploadInFlight = null;
         });
 
