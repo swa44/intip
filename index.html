@@ -975,11 +975,52 @@
       const SHARE_STORE = "shared-files";
       let sharedUploadInFlight = null;
       let sharedUploadQueued = false;
-      let sharedFlushTimer = null;
-      let sharedPollInterval = null;
+      const IMAGE_EXTENSIONS = new Set([
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "svg",
+        "bmp",
+        "avif",
+        "heic",
+        "heif",
+      ]);
+      const MIME_BY_EXTENSION = {
+        avif: "image/avif",
+        bmp: "image/bmp",
+        csv: "text/csv",
+        gif: "image/gif",
+        heic: "image/heic",
+        heif: "image/heif",
+        jpeg: "image/jpeg",
+        jpg: "image/jpeg",
+        json: "application/json",
+        pdf: "application/pdf",
+        png: "image/png",
+        svg: "image/svg+xml",
+        txt: "text/plain",
+        webp: "image/webp",
+        zip: "application/zip",
+      };
 
       const $ = (id) => document.getElementById(id);
-      const isImage = (file) => String(file.type || "").startsWith("image/");
+      const extensionOf = (name) => {
+        const value = String(name || "").trim().toLowerCase();
+        const index = value.lastIndexOf(".");
+        return index >= 0 ? value.slice(index + 1) : "";
+      };
+      const normalizeMimeType = (name, type) => {
+        const value = String(type || "").trim().toLowerCase();
+        if (value && value !== "application/octet-stream") return value;
+        const extension = extensionOf(name);
+        return MIME_BY_EXTENSION[extension] || value || "application/octet-stream";
+      };
+      const isImage = (file) => {
+        const type = normalizeMimeType(file?.name, file?.type);
+        return type.startsWith("image/") || IMAGE_EXTENSIONS.has(extensionOf(file?.name));
+      };
       const storedImages = () => state.files.filter(isImage);
       const storedFiles = () => state.files.filter((file) => !isImage(file));
 
@@ -1051,14 +1092,12 @@
         $("bootView").classList.add("hidden");
         $("loginView").classList.remove("hidden");
         $("appView").style.display = "none";
-        stopSharedPolling();
       }
 
       function showApp() {
         $("bootView").classList.add("hidden");
         $("loginView").classList.add("hidden");
         $("appView").style.display = "block";
-        startSharedPolling();
       }
 
       function setTab(tab) {
@@ -1474,16 +1513,30 @@
         return records
           .filter((record) => record.file && (record.file instanceof Blob || (typeof File !== 'undefined' && record.file instanceof File)))
           .map((record) => {
+            const type = normalizeMimeType(record.name, record.type || record.file?.type);
             if (typeof File !== 'undefined' && !(record.file instanceof File)) {
               return {
                 ...record,
                 file: new File([record.file], record.name || 'shared-file', {
-                  type: record.type || record.file.type,
+                  type,
                   lastModified: record.createdAt || Date.now()
-                })
+                }),
+                type,
               };
             }
-            return record;
+
+            if (record.file.type !== type) {
+              return {
+                ...record,
+                file: new File([record.file], record.name || record.file.name || 'shared-file', {
+                  type,
+                  lastModified: record.file.lastModified || record.createdAt || Date.now(),
+                }),
+                type,
+              };
+            }
+
+            return { ...record, type };
           });
       }
 
@@ -1540,10 +1593,19 @@
       }
 
       async function uploadOne(file, expected) {
-        if (expected === "image" && !file.type.startsWith("image/")) {
+        const normalizedType = normalizeMimeType(file.name, file.type);
+        const normalizedFile =
+          file.type === normalizedType
+            ? file
+            : new File([file], file.name || "file", {
+                type: normalizedType,
+                lastModified: file.lastModified || Date.now(),
+              });
+
+        if (expected === "image" && !isImage(normalizedFile)) {
           throw new Error(`${file.name}은 이미지 파일이 아닙니다.`);
         }
-        if (expected === "file" && file.type.startsWith("image/")) {
+        if (expected === "file" && isImage(normalizedFile)) {
           throw new Error(`${file.name}은 이미지 탭에 업로드하세요.`);
         }
 
@@ -1551,13 +1613,13 @@
           method: "POST",
           body: JSON.stringify({
             action: "upload-url",
-            name: file.name,
-            type: file.type || "application/octet-stream",
-            size: file.size,
+            name: normalizedFile.name,
+            type: normalizedType,
+            size: normalizedFile.size,
           }),
         });
 
-        await uploadToR2(signed.uploadUrl, file);
+        await uploadToR2(signed.uploadUrl, normalizedFile);
 
         const data = await api("/api/files", {
           method: "POST",
@@ -1681,38 +1743,6 @@
         });
 
         return sharedUploadInFlight;
-      }
-
-      function scheduleSharedFlush() {
-        const delays = [0, 350, 1000, 2200];
-
-        window.clearTimeout(sharedFlushTimer);
-        for (const delay of delays) {
-          window.setTimeout(() => {
-            if ($("appView").style.display === "block") {
-              flushSharedRecords().catch((error) => console.error(error));
-            }
-          }, delay);
-        }
-
-        sharedFlushTimer = window.setTimeout(() => {
-          sharedFlushTimer = null;
-        }, Math.max(...delays) + 50);
-      }
-
-      function startSharedPolling() {
-        if (sharedPollInterval) return;
-
-        sharedPollInterval = window.setInterval(() => {
-          if (document.hidden || $("appView").style.display !== "block") return;
-          flushSharedRecords().catch((error) => console.error(error));
-        }, 1500);
-      }
-
-      function stopSharedPolling() {
-        if (!sharedPollInterval) return;
-        window.clearInterval(sharedPollInterval);
-        sharedPollInterval = null;
       }
 
       function fileFromClipboardItem(item, index) {
@@ -1947,8 +1977,9 @@
             showApp();
             await loadAll();
             await flushSharedRecords();
-            if (params.has("shared")) {
-              scheduleSharedFlush();
+            if (params.has("shared_done")) {
+              showToast("공유 파일을 저장했습니다.");
+              history.replaceState(null, "", window.location.pathname);
             }
           } else {
             showLogin();
@@ -1957,33 +1988,6 @@
           showLogin();
         }
       })();
-
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.addEventListener("message", (event) => {
-          const isSharedEvent = event.data?.type === "shared-files-received" || event.data?.action === "shared-records-updated";
-          if (isSharedEvent && $("appView").style.display === "block") {
-            scheduleSharedFlush();
-          }
-        });
-      }
-
-      window.addEventListener("focus", () => {
-        if ($("appView").style.display === "block") {
-          scheduleSharedFlush();
-        }
-      });
-
-      window.addEventListener("pageshow", () => {
-        if ($("appView").style.display === "block") {
-          scheduleSharedFlush();
-        }
-      });
-
-      document.addEventListener("visibilitychange", () => {
-        if (!document.hidden && $("appView").style.display === "block") {
-          scheduleSharedFlush();
-        }
-      });
     </script>
   </body>
 </html>

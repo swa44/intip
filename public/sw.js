@@ -56,11 +56,9 @@ async function focusOrOpenShareClient(targetUrl) {
     if ("focus" in client) {
       await client.focus();
     }
-    // No client.navigate() — the 303 redirect already navigates the window.
-    // No postMessage — sending a message here triggers flushSharedRecords()
-    // on the old page instance while the redirect simultaneously boots a new
-    // instance, causing both to read IndexedDB before either clears it and
-    // resulting in double uploads or alternating failures.
+    if ("navigate" in client) {
+      await client.navigate(targetUrl);
+    }
     return true;
   }
 
@@ -99,13 +97,13 @@ self.addEventListener("fetch", (event) => {
             text: formData.get("text"),
           });
 
-          const redirectUrl = `/?shared=1&t=${Date.now()}`;
+          const redirectUrl = `/share-target?t=${Date.now()}`;
           event.waitUntil(focusOrOpenShareClient(redirectUrl));
 
           return Response.redirect(redirectUrl, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
-          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
+          return Response.redirect(`/share-target?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
         }
       })(),
     );

@@ -1,9 +1,13 @@
+const fs = require("fs");
+const path = require("path");
+
 export async function getServerSideProps({ res }) {
-  // Redirect to home page with a status code 303 (See Other)
-  // This changes the POST request to a GET request to the homepage,
-  // preventing 404 errors during cold starts when the Service Worker is not yet active.
-  res.setHeader("Location", "/?shared_fallback=1");
-  res.statusCode = 303;
+  const html = fs.readFileSync(
+    path.join(process.cwd(), "share-target.html"),
+    "utf8",
+  );
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.write(html);
   res.end();
 
   return { props: {} };
