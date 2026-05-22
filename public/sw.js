@@ -47,9 +47,6 @@ async function saveSharedFiles(files, meta = {}) {
 }
 
 async function focusOrOpenShareClient(targetUrl) {
-  const opened = await self.clients.openWindow(targetUrl);
-  if (opened) return true;
-
   const windowClients = await self.clients.matchAll({
     type: "window",
     includeUncontrolled: true,
@@ -68,7 +65,25 @@ async function focusOrOpenShareClient(targetUrl) {
     return true;
   }
 
-  return false;
+  const opened = await self.clients.openWindow(targetUrl);
+  return !!opened;
+}
+
+async function notifyShareReady(batchId, targetUrl) {
+  const windowClients = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+
+  await Promise.all(
+    windowClients.map((client) =>
+      client.postMessage({
+        type: "share-batch-ready",
+        batchId,
+        targetUrl,
+      }),
+    ),
+  );
 }
 
 self.addEventListener("install", (event) => {
@@ -103,7 +118,12 @@ self.addEventListener("fetch", (event) => {
           });
 
           const redirectUrl = `/share-target?batch=${encodeURIComponent(batchId || "")}&t=${Date.now()}`;
-          event.waitUntil(focusOrOpenShareClient(redirectUrl));
+          event.waitUntil(
+            Promise.all([
+              focusOrOpenShareClient(redirectUrl),
+              notifyShareReady(batchId, redirectUrl),
+            ]),
+          );
 
           return Response.redirect(redirectUrl, 303);
         } catch (error) {
