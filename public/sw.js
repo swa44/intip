@@ -3,6 +3,36 @@ const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
 
+function shareRedirectHtml(targetUrl) {
+  const escapedUrl = JSON.stringify(targetUrl);
+  return `<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>intip 공유 연결 중</title>
+    <style>
+      body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f4ef;color:#202124;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      main{padding:24px;text-align:center}
+      a{color:#11685c}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>공유 화면으로 이동 중입니다.</p>
+      <p><a id="link" href=${escapedUrl}>계속하기</a></p>
+    </main>
+    <script>
+      const targetUrl = ${escapedUrl};
+      const link = document.getElementById("link");
+      if (link) link.href = targetUrl;
+      window.location.replace(targetUrl);
+    </script>
+  </body>
+</html>`;
+}
+
 function openShareDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(SHARE_DB, 1);
@@ -78,10 +108,23 @@ self.addEventListener("fetch", (event) => {
           });
 
           const redirectUrl = `/share-target?batch=${encodeURIComponent(batchId || "")}&t=${Date.now()}`;
-          return Response.redirect(redirectUrl, 303);
+          return new Response(shareRedirectHtml(redirectUrl), {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
-          return Response.redirect(`/share-target?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
+          const errorUrl = `/share-target?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`;
+          return new Response(shareRedirectHtml(errorUrl), {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          });
         }
       })(),
     );
@@ -89,6 +132,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname === "/share-target") return;
   if (event.request.method !== "GET") return;
 
   event.respondWith(
