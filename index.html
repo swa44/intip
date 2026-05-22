@@ -1661,12 +1661,22 @@
           return sharedUploadInFlight;
         }
 
-        sharedUploadInFlight = (async () => {
+        const run = async () => {
           do {
             sharedUploadQueued = false;
             await uploadSharedRecords();
           } while (sharedUploadQueued);
-        })().finally(() => {
+        };
+
+        // navigator.locks serializes flushes across page instances (tabs, BFCache,
+        // or the old page still alive when a new share navigates in). Without this,
+        // the focus/visibilitychange events on the old page read IndexedDB at the
+        // same time as the new page's boot flush, causing double uploads.
+        sharedUploadInFlight = (
+          typeof navigator.locks?.request === "function"
+            ? navigator.locks.request("intip-share-flush", { mode: "exclusive" }, run)
+            : run()
+        ).finally(() => {
           sharedUploadInFlight = null;
         });
 
