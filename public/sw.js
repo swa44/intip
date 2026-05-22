@@ -97,7 +97,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         try {
-          const formData = await event.request.formData();
+          const clonedReq = event.request.clone();
+          const formData = await clonedReq.formData();
           const files = formData
             .getAll("sharedFiles")
             .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
