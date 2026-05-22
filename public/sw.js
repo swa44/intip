@@ -60,9 +60,9 @@ async function focusOrOpenShareClient() {
     if ("focus" in client) {
       await client.focus();
     }
-    if ("navigate" in client) {
-      await client.navigate(targetUrl);
-    }
+    // Don't call client.navigate() here — the 303 redirect already navigates
+    // the window. A second navigate() races against the redirect and causes
+    // alternating share failures.
     client.postMessage({ type: "shared-files-received" });
     return true;
   }
