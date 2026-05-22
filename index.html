@@ -971,11 +971,10 @@
         previewImageId: null,
         noteQuery: "",
       };
-      const SHARE_DB = "intip-share-target";
-      const SHARE_STORE = "shared-files";
-      let sharedUploadInFlight = null;
-      let sharedUploadQueued = false;
-      const IMAGE_EXTENSIONS = new Set([
+      const SHARE_DB = "intip-share";
+      const SHARE_STORE = "pending";
+      let shareFlushInFlight = null;
+const IMAGE_EXTENSIONS = new Set([
         "png",
         "jpg",
         "jpeg",
@@ -1489,84 +1488,100 @@
 
       function openShareDb() {
         return new Promise((resolve, reject) => {
-          const request = indexedDB.open(SHARE_DB, 1);
-
-          request.onupgradeneeded = () => {
-            request.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
-          };
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
+          const req = indexedDB.open(SHARE_DB, 1);
+          req.onupgradeneeded = () => req.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
         });
       }
 
-      async function getSharedRecords(batchId = "") {
+      async function getSharedEntries() {
         if (!("indexedDB" in window)) return [];
         const db = await openShareDb();
-        const records = await new Promise((resolve, reject) => {
-          const transaction = db.transaction(SHARE_STORE, "readonly");
-          const request = transaction.objectStore(SHARE_STORE).getAll();
-          request.onsuccess = () => resolve(request.result || []);
-          request.onerror = () => reject(request.error);
+        const entries = await new Promise((resolve, reject) => {
+          const tx = db.transaction(SHARE_STORE, "readonly");
+          const req = tx.objectStore(SHARE_STORE).getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
         });
         db.close();
-
-        const normalizedRecords = records
-          .filter((record) => record.file && (record.file instanceof Blob || (typeof File !== 'undefined' && record.file instanceof File)))
-          .map((record) => {
-            const type = normalizeMimeType(record.name, record.type || record.file?.type);
-            if (typeof File !== 'undefined' && !(record.file instanceof File)) {
-              return {
-                ...record,
-                file: new File([record.file], record.name || 'shared-file', {
-                  type,
-                  lastModified: record.createdAt || Date.now()
-                }),
-                type,
-              };
-            }
-
-            if (record.file.type !== type) {
-              return {
-                ...record,
-                file: new File([record.file], record.name || record.file.name || 'shared-file', {
-                  type,
-                  lastModified: record.file.lastModified || record.createdAt || Date.now(),
-                }),
-                type,
-              };
-            }
-
-            return { ...record, type };
-          });
-
-        const targetBatchId =
-          batchId ||
-          normalizedRecords
-            .map((record) => record.batchId)
-            .filter(Boolean)
-            .toSorted()
-            .at(-1) ||
-          "";
-
-        return normalizedRecords
-          .filter((record) => !targetBatchId || record.batchId === targetBatchId)
-          .toSorted((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+        return entries.toSorted((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
       }
 
-      async function clearSharedRecords(ids) {
+      async function clearSharedEntries(ids) {
         if (!ids.length || !("indexedDB" in window)) return;
         const db = await openShareDb();
         await new Promise((resolve, reject) => {
-          const transaction = db.transaction(SHARE_STORE, "readwrite");
-          const store = transaction.objectStore(SHARE_STORE);
+          const tx = db.transaction(SHARE_STORE, "readwrite");
+          const store = tx.objectStore(SHARE_STORE);
           ids.forEach((id) => store.delete(id));
-          transaction.oncomplete = () => resolve();
-          transaction.onerror = () => reject(transaction.error);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
         });
         db.close();
       }
 
-      async function saveNote(event) {
+      async function flushSharedEntries() {
+        if (shareFlushInFlight) return shareFlushInFlight;
+
+        const doFlush = async () => {
+          const entries = await getSharedEntries();
+          if (!entries.length) return;
+
+          setStatus("공유 파일 업로드 중");
+          let uploaded = 0;
+          const doneIds = [];
+
+          for (const entry of entries) {
+            try {
+              const type = normalizeMimeType(entry.name, entry.type);
+              const file = new File([entry.bytes], entry.name, {
+                type,
+                lastModified: entry.createdAt || Date.now(),
+              });
+              showProgress(`${file.name} 업로드 중`, 0);
+              const result = await uploadOne(file, "shared");
+              if (!state.files.some((f) => f.id === result.id)) {
+                state.files.unshift(result);
+              }
+              doneIds.push(entry.id);
+              uploaded++;
+              setStatus(`${uploaded}/${entries.length} 업로드`);
+            } catch (err) {
+              console.error("공유 파일 업로드 실패:", entry.name, err);
+              showToast(`업로드 실패 (${entry.name}): ${err.message}`);
+              doneIds.push(entry.id);
+            }
+          }
+
+          await clearSharedEntries(doneIds);
+          renderImages();
+          renderFiles();
+
+          if (uploaded > 0) {
+            const uploadedEntries = entries.filter((e) => doneIds.includes(e.id));
+            setTab(uploadedEntries.every((e) => isImage({ name: e.name, type: e.type })) ? "images" : "files");
+            showProgress("업로드 완료", 100);
+            hideProgress();
+            showToast(`${uploaded}개 파일을 저장했습니다.`);
+          } else {
+            hideProgress(0);
+          }
+          setStatus("저장됨");
+        };
+
+        shareFlushInFlight = (
+          typeof navigator.locks?.request === "function"
+            ? navigator.locks.request("intip-share-flush", { mode: "exclusive" }, doFlush)
+            : doFlush()
+        ).finally(() => {
+          shareFlushInFlight = null;
+        });
+
+        return shareFlushInFlight;
+      }
+
+async function saveNote(event) {
         event.preventDefault();
         const title = $("noteTitle").value.trim() || "Untitled";
         const bodyHtml = $("noteBody").innerHTML.trim();
@@ -1673,90 +1688,7 @@
         }
       }
 
-      async function uploadSharedRecords(batchId = "") {
-        const records = await getSharedRecords(batchId);
-        if (!records.length) return;
-
-        setStatus("공유 파일 업로드 중");
-        let uploaded = 0;
-        const succeededIds = [];
-
-        for (const record of records) {
-          try {
-            const file = record.file;
-            showProgress(`${file.name || record.name} 업로드 중`, 0);
-            const uploadedFile = await uploadOne(file, "shared");
-            if (!state.files.some((item) => item.id === uploadedFile.id)) {
-              state.files.unshift(uploadedFile);
-            }
-            uploaded += 1;
-            succeededIds.push(record.id);
-            setStatus(`${uploaded}/${records.length} 공유 파일 업로드`);
-          } catch (fileError) {
-            console.error("Failed to upload shared record:", record, fileError);
-            showToast(`업로드 실패 (${record.name || '공유 파일'}): ${fileError.message}`);
-            // Clear even failed records to prevent them from locking the IndexedDB queue permanently
-            succeededIds.push(record.id);
-          }
-        }
-
-        try {
-          if (succeededIds.length) {
-            await clearSharedRecords(succeededIds);
-          }
-          renderImages();
-          renderFiles();
-          
-          if (records.some((record) => succeededIds.includes(record.id))) {
-            setTab("files");
-          }
-          
-          setStatus("저장됨");
-          showProgress("공유 파일 업로드 완료", 100);
-          hideProgress();
-          if (uploaded > 0) {
-            showToast(`${uploaded}개 공유 파일을 업로드했습니다.`);
-          }
-
-          if (new URLSearchParams(window.location.search).has("shared")) {
-            history.replaceState(null, "", window.location.pathname);
-          }
-        } catch (error) {
-          setStatus("공유 파일 완료 처리 실패");
-          hideProgress(0);
-          console.error(error);
-        }
-      }
-
-      async function flushSharedRecords() {
-        if (sharedUploadInFlight) {
-          sharedUploadQueued = true;
-          return sharedUploadInFlight;
-        }
-
-        const run = async () => {
-          do {
-            sharedUploadQueued = false;
-            await uploadSharedRecords();
-          } while (sharedUploadQueued);
-        };
-
-        // navigator.locks serializes flushes across page instances (tabs, BFCache,
-        // or the old page still alive when a new share navigates in). Without this,
-        // the focus/visibilitychange events on the old page read IndexedDB at the
-        // same time as the new page's boot flush, causing double uploads.
-        sharedUploadInFlight = (
-          typeof navigator.locks?.request === "function"
-            ? navigator.locks.request("intip-share-flush", { mode: "exclusive" }, run)
-            : run()
-        ).finally(() => {
-          sharedUploadInFlight = null;
-        });
-
-        return sharedUploadInFlight;
-      }
-
-      function fileFromClipboardItem(item, index) {
+function fileFromClipboardItem(item, index) {
         const file = item.getAsFile();
         if (!file) return null;
 
@@ -1974,8 +1906,8 @@
         resetEditor();
 
         const params = new URLSearchParams(window.location.search);
-        if (params.has("shared_error")) {
-          showToast(`공유 파일 오류: ${params.get("shared_error")}`);
+        if (params.has("share_error")) {
+          showToast(`공유 오류: ${params.get("share_error")}`);
           history.replaceState(null, "", window.location.pathname);
         }
 
@@ -1984,13 +1916,9 @@
           if (session.authenticated) {
             showApp();
             await loadAll();
-            if (params.has("shared_fallback")) {
-              await flushSharedRecords();
+            if (params.has("shared")) {
               history.replaceState(null, "", window.location.pathname);
-            }
-            if (params.has("shared_done")) {
-              showToast("공유 파일을 저장했습니다.");
-              history.replaceState(null, "", window.location.pathname);
+              await flushSharedEntries();
             }
           } else {
             showLogin();

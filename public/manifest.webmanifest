@@ -18,45 +18,7 @@
       "files": [
         {
           "name": "sharedFiles",
-          "accept": [
-            "image/png",
-            ".png",
-            "image/jpeg",
-            ".jpeg",
-            ".jpg",
-            "image/webp",
-            ".webp",
-            "image/gif",
-            ".gif",
-            "image/svg+xml",
-            ".svg",
-            "image/heic",
-            ".heic",
-            "image/heif",
-            ".heif",
-            "application/pdf",
-            "application/x-pdf",
-            "application/acrobat",
-            "applications/vnd.pdf",
-            "text/pdf",
-            "text/x-pdf",
-            "application/octet-stream",
-            ".pdf",
-            "text/plain",
-            ".txt",
-            "text/csv",
-            ".csv",
-            "application/zip",
-            ".zip",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            ".docx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            ".xlsx",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ".pptx",
-            "application/x-hwp",
-            ".hwp"
-          ]
+          "accept": ["*/*"]
         }
       ]
     }

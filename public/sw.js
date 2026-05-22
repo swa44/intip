@@ -1,71 +1,51 @@
-const CACHE_NAME = "intip-shell-v1.3";
+const CACHE_NAME = "intip-shell-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
-const SHARE_DB = "intip-share-target";
-const SHARE_STORE = "shared-files";
+const SHARE_DB = "intip-share";
+const SHARE_STORE = "pending";
 
 function openShareDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(SHARE_DB, 1);
-
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    const req = indexedDB.open(SHARE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
 
 async function saveSharedFiles(files, meta = {}) {
   if (!files.length) return;
 
-  const db = await openShareDb();
-  const batchId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  await new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHARE_STORE, "readwrite");
-    const store = transaction.objectStore(SHARE_STORE);
-    const createdAt = Date.now();
-
-    files.forEach((file, index) => {
-      store.put({
-        id: `${createdAt}-${index}-${Math.random().toString(36).slice(2)}`,
-        file,
-        name: file.name || `shared-${createdAt}-${index}`,
+  // Read all bytes into memory FIRST, before any async gap.
+  // Files from drawing/third-party apps arrive via FileProvider URIs (Android)
+  // whose permissions can be revoked at any time. Calling arrayBuffer() here
+  // captures the raw bytes while we still have access, so IndexedDB stores
+  // plain ArrayBuffers — no URI dependency at all.
+  const entries = await Promise.all(
+    files.map(async (file, i) => {
+      const bytes = await file.arrayBuffer();
+      const createdAt = Date.now();
+      return {
+        id: `${createdAt}-${i}-${Math.random().toString(36).slice(2)}`,
+        bytes,
+        name: file.name || `shared-file-${i}`,
         type: file.type || "application/octet-stream",
-        size: file.size || 0,
-        batchId,
+        size: bytes.byteLength,
         title: meta.title || "",
         text: meta.text || "",
         createdAt,
-      });
-    });
+      };
+    })
+  );
 
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
+  const db = await openShareDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(SHARE_STORE, "readwrite");
+    const store = tx.objectStore(SHARE_STORE);
+    entries.forEach((entry) => store.put(entry));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
   db.close();
-}
-
-async function focusOrOpenShareClient(targetUrl) {
-  const windowClients = await self.clients.matchAll({
-    type: "window",
-    includeUncontrolled: true,
-  });
-
-  for (const client of windowClients) {
-    const clientUrl = new URL(client.url);
-    if (clientUrl.origin !== self.location.origin) continue;
-
-    if ("focus" in client) {
-      await client.focus();
-    }
-    // No client.navigate() — the 303 redirect already navigates the window.
-    // No postMessage — triggers a flush on the old page instance while the
-    // redirect is loading a new instance, causing double uploads.
-    return true;
-  }
-
-  const opened = await self.clients.openWindow(targetUrl);
-  return !!opened;
 }
 
 self.addEventListener("install", (event) => {
@@ -77,7 +57,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))),
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))),
   );
   self.clients.claim();
 });
@@ -92,23 +72,20 @@ self.addEventListener("fetch", (event) => {
           const formData = await event.request.formData();
           const files = formData
             .getAll("sharedFiles")
-            .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
+            .filter((item) => item instanceof Blob && item.size > 0);
 
           await saveSharedFiles(files, {
-            title: formData.get("title"),
-            text: formData.get("text"),
+            title: formData.get("title") || "",
+            text: formData.get("text") || "",
           });
 
-          // Web Share Target spec requires a redirect response (not HTML+JS).
-          // Returning HTML breaks script execution on some Android WebViews.
-          // Use shared_fallback param — the boot checks for this to trigger flush.
-          const redirectUrl = `/?shared_fallback=1&t=${Date.now()}`;
-          event.waitUntil(focusOrOpenShareClient(redirectUrl));
-
-          return Response.redirect(redirectUrl, 303);
-        } catch (error) {
-          console.error("Share target fetch error in service worker:", error);
-          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
+          return Response.redirect(`/?shared=1&t=${Date.now()}`, 303);
+        } catch (err) {
+          console.error("[SW] share-target error:", err);
+          return Response.redirect(
+            `/?share_error=${encodeURIComponent(err.message || "unknown")}&t=${Date.now()}`,
+            303,
+          );
         }
       })(),
     );
@@ -120,10 +97,9 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     fetch(event.request)
-      .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return response;
+      .then((res) => {
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, res.clone()));
+        return res;
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("/"))),
   );
