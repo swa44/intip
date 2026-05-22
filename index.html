@@ -976,6 +976,7 @@
       let sharedUploadInFlight = null;
       let sharedUploadQueued = false;
       let sharedFlushTimer = null;
+      let sharedPollInterval = null;
 
       const $ = (id) => document.getElementById(id);
       const isImage = (file) => String(file.type || "").startsWith("image/");
@@ -1050,12 +1051,14 @@
         $("bootView").classList.add("hidden");
         $("loginView").classList.remove("hidden");
         $("appView").style.display = "none";
+        stopSharedPolling();
       }
 
       function showApp() {
         $("bootView").classList.add("hidden");
         $("loginView").classList.add("hidden");
         $("appView").style.display = "block";
+        startSharedPolling();
       }
 
       function setTab(tab) {
@@ -1685,6 +1688,21 @@
         sharedFlushTimer = window.setTimeout(() => {
           sharedFlushTimer = null;
         }, Math.max(...delays) + 50);
+      }
+
+      function startSharedPolling() {
+        if (sharedPollInterval) return;
+
+        sharedPollInterval = window.setInterval(() => {
+          if (document.hidden || $("appView").style.display !== "block") return;
+          flushSharedRecords().catch((error) => console.error(error));
+        }, 1500);
+      }
+
+      function stopSharedPolling() {
+        if (!sharedPollInterval) return;
+        window.clearInterval(sharedPollInterval);
+        sharedPollInterval = null;
       }
 
       function fileFromClipboardItem(item, index) {
