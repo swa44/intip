@@ -973,6 +973,7 @@
       };
       const SHARE_DB = "intip-share-target";
       const SHARE_STORE = "shared-files";
+      let sharedUploadInFlight = null;
 
       const $ = (id) => document.getElementById(id);
       const isImage = (file) => String(file.type || "").startsWith("image/");
@@ -1649,6 +1650,16 @@
         }
       }
 
+      async function flushSharedRecords() {
+        if (sharedUploadInFlight) return sharedUploadInFlight;
+
+        sharedUploadInFlight = uploadSharedRecords().finally(() => {
+          sharedUploadInFlight = null;
+        });
+
+        return sharedUploadInFlight;
+      }
+
       function fileFromClipboardItem(item, index) {
         const file = item.getAsFile();
         if (!file) return null;
@@ -1772,7 +1783,7 @@
           showApp();
           resetEditor();
           await loadAll();
-          await uploadSharedRecords();
+          await flushSharedRecords();
         } catch (error) {
           showToast(error.message);
         }
@@ -1878,7 +1889,7 @@
           if (session.authenticated) {
             showApp();
             await loadAll();
-            await uploadSharedRecords();
+            await flushSharedRecords();
           } else {
             showLogin();
           }
@@ -1886,6 +1897,24 @@
           showLogin();
         }
       })();
+
+      window.addEventListener("focus", () => {
+        if ($("appView").style.display === "block") {
+          flushSharedRecords().catch((error) => console.error(error));
+        }
+      });
+
+      window.addEventListener("pageshow", () => {
+        if ($("appView").style.display === "block") {
+          flushSharedRecords().catch((error) => console.error(error));
+        }
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && $("appView").style.display === "block") {
+          flushSharedRecords().catch((error) => console.error(error));
+        }
+      });
     </script>
   </body>
 </html>
