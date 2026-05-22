@@ -1901,6 +1901,14 @@
         }
       })();
 
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          if (event.data?.type === "shared-files-received" && $("appView").style.display === "block") {
+            flushSharedRecords().catch((error) => console.error(error));
+          }
+        });
+      }
+
       window.addEventListener("focus", () => {
         if ($("appView").style.display === "block") {
           flushSharedRecords().catch((error) => console.error(error));
