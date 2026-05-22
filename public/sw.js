@@ -1,4 +1,4 @@
-const CACHE_NAME = "intip-shell-v1";
+const CACHE_NAME = "intip-shell-v1.2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
@@ -75,6 +75,20 @@ async function focusOrOpenShareClient() {
   return false;
 }
 
+async function notifyClients() {
+  try {
+    const clients = await self.clients.matchAll({ type: "window" });
+    for (const client of clients) {
+      client.postMessage({ 
+        action: "shared-records-updated",
+        type: "shared-files-received"
+      });
+    }
+  } catch (err) {
+    console.error("Failed to notify clients:", err);
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
@@ -105,12 +119,13 @@ self.addEventListener("fetch", (event) => {
             title: formData.get("title"),
             text: formData.get("text"),
           });
-          event.waitUntil(focusOrOpenShareClient());
 
-          return Response.redirect(shareUrl(), 303);
+          event.waitUntil(notifyClients());
+
+          return Response.redirect(`/?shared=1&t=${Date.now()}`, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
-          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}`, 303);
+          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
         }
       })(),
     );
