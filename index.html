@@ -1475,16 +1475,6 @@
         renderFiles();
       }
 
-      function openShareTargetPage(targetUrl) {
-        if (!targetUrl) return;
-        const nextUrl = new URL(targetUrl, window.location.origin);
-        const currentUrl = new URL(window.location.href);
-        if (nextUrl.pathname === currentUrl.pathname && nextUrl.search === currentUrl.search) {
-          return;
-        }
-        window.location.replace(nextUrl.toString());
-      }
-
       async function loadAll() {
         setStatus("불러오는 중");
         const [notesData, filesData] = await Promise.all([
@@ -1983,12 +1973,6 @@
       (async function boot() {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("/sw.js").catch(() => {});
-
-          navigator.serviceWorker.addEventListener("message", (event) => {
-            if (event.data?.type === "share-batch-ready" && event.data?.targetUrl) {
-              openShareTargetPage(event.data.targetUrl);
-            }
-          });
         }
 
         resetEditor();

@@ -1,4 +1,4 @@
-const CACHE_NAME = "intip-shell-v1.2";
+const CACHE_NAME = "intip-shell-v1.3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
@@ -46,46 +46,6 @@ async function saveSharedFiles(files, meta = {}) {
   return batchId;
 }
 
-async function focusOrOpenShareClient(targetUrl) {
-  const windowClients = await self.clients.matchAll({
-    type: "window",
-    includeUncontrolled: true,
-  });
-
-  for (const client of windowClients) {
-    const clientUrl = new URL(client.url);
-    if (clientUrl.origin !== self.location.origin) continue;
-
-    if ("focus" in client) {
-      await client.focus();
-    }
-    if ("navigate" in client) {
-      await client.navigate(targetUrl);
-    }
-    return true;
-  }
-
-  const opened = await self.clients.openWindow(targetUrl);
-  return !!opened;
-}
-
-async function notifyShareReady(batchId, targetUrl) {
-  const windowClients = await self.clients.matchAll({
-    type: "window",
-    includeUncontrolled: true,
-  });
-
-  await Promise.all(
-    windowClients.map((client) =>
-      client.postMessage({
-        type: "share-batch-ready",
-        batchId,
-        targetUrl,
-      }),
-    ),
-  );
-}
-
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
@@ -118,13 +78,6 @@ self.addEventListener("fetch", (event) => {
           });
 
           const redirectUrl = `/share-target?batch=${encodeURIComponent(batchId || "")}&t=${Date.now()}`;
-          event.waitUntil(
-            Promise.all([
-              focusOrOpenShareClient(redirectUrl),
-              notifyShareReady(batchId, redirectUrl),
-            ]),
-          );
-
           return Response.redirect(redirectUrl, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
