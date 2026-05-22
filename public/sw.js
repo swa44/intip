@@ -19,6 +19,7 @@ async function saveSharedFiles(files, meta = {}) {
   if (!files.length) return;
 
   const db = await openShareDb();
+  const batchId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(SHARE_STORE, "readwrite");
     const store = transaction.objectStore(SHARE_STORE);
@@ -31,6 +32,7 @@ async function saveSharedFiles(files, meta = {}) {
         name: file.name || `shared-${createdAt}-${index}`,
         type: file.type || "application/octet-stream",
         size: file.size || 0,
+        batchId,
         title: meta.title || "",
         text: meta.text || "",
         createdAt,
@@ -97,11 +99,12 @@ self.addEventListener("fetch", (event) => {
             text: formData.get("text"),
           });
 
-          const redirectUrl = `/?shared=1&t=${Date.now()}`;
-          event.waitUntil(focusOrOpenShareClient(redirectUrl));
-
           // Web Share Target spec requires a redirect response (not HTML+JS).
           // Returning HTML breaks script execution on some Android WebViews.
+          // Use shared_fallback param — the boot checks for this to trigger flush.
+          const redirectUrl = `/?shared_fallback=1&t=${Date.now()}`;
+          event.waitUntil(focusOrOpenShareClient(redirectUrl));
+
           return Response.redirect(redirectUrl, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
