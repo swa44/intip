@@ -2,9 +2,6 @@ const CACHE_NAME = "intip-shell-v1.2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
-function shareUrl() {
-  return `/?shared=${Date.now()}`;
-}
 
 function openShareDb() {
   return new Promise((resolve, reject) => {
@@ -46,8 +43,7 @@ async function saveSharedFiles(files, meta = {}) {
   db.close();
 }
 
-async function focusOrOpenShareClient() {
-  const targetUrl = shareUrl();
+async function focusOrOpenShareClient(targetUrl) {
   const windowClients = await self.clients.matchAll({
     type: "window",
     includeUncontrolled: true,
@@ -60,33 +56,16 @@ async function focusOrOpenShareClient() {
     if ("focus" in client) {
       await client.focus();
     }
-    // Don't call client.navigate() here — the 303 redirect already navigates
-    // the window. A second navigate() races against the redirect and causes
-    // alternating share failures.
-    client.postMessage({ type: "shared-files-received" });
+    // No client.navigate() — the 303 redirect already navigates the window.
+    // No postMessage — sending a message here triggers flushSharedRecords()
+    // on the old page instance while the redirect simultaneously boots a new
+    // instance, causing both to read IndexedDB before either clears it and
+    // resulting in double uploads or alternating failures.
     return true;
   }
 
   const opened = await self.clients.openWindow(targetUrl);
-  if (opened) {
-    opened.postMessage({ type: "shared-files-received" });
-    return true;
-  }
-  return false;
-}
-
-async function notifyClients() {
-  try {
-    const clients = await self.clients.matchAll({ type: "window" });
-    for (const client of clients) {
-      client.postMessage({ 
-        action: "shared-records-updated",
-        type: "shared-files-received"
-      });
-    }
-  } catch (err) {
-    console.error("Failed to notify clients:", err);
-  }
+  return !!opened;
 }
 
 self.addEventListener("install", (event) => {
@@ -120,9 +99,10 @@ self.addEventListener("fetch", (event) => {
             text: formData.get("text"),
           });
 
-          event.waitUntil(notifyClients());
+          const redirectUrl = `/?shared=1&t=${Date.now()}`;
+          event.waitUntil(focusOrOpenShareClient(redirectUrl));
 
-          return Response.redirect(`/?shared=1&t=${Date.now()}`, 303);
+          return Response.redirect(redirectUrl, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
           return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
