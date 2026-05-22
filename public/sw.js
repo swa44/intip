@@ -16,9 +16,10 @@ function openShareDb() {
 }
 
 async function saveSharedFiles(files, meta = {}) {
-  if (!files.length) return;
+  if (!files.length) return null;
 
   const db = await openShareDb();
+  const batchId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(SHARE_STORE, "readwrite");
     const store = transaction.objectStore(SHARE_STORE);
@@ -31,6 +32,7 @@ async function saveSharedFiles(files, meta = {}) {
         name: file.name || `shared-${createdAt}-${index}`,
         type: file.type || "application/octet-stream",
         size: file.size || 0,
+        batchId,
         title: meta.title || "",
         text: meta.text || "",
         createdAt,
@@ -41,9 +43,13 @@ async function saveSharedFiles(files, meta = {}) {
     transaction.onerror = () => reject(transaction.error);
   });
   db.close();
+  return batchId;
 }
 
 async function focusOrOpenShareClient(targetUrl) {
+  const opened = await self.clients.openWindow(targetUrl);
+  if (opened) return true;
+
   const windowClients = await self.clients.matchAll({
     type: "window",
     includeUncontrolled: true,
@@ -62,8 +68,7 @@ async function focusOrOpenShareClient(targetUrl) {
     return true;
   }
 
-  const opened = await self.clients.openWindow(targetUrl);
-  return !!opened;
+  return false;
 }
 
 self.addEventListener("install", (event) => {
@@ -92,12 +97,12 @@ self.addEventListener("fetch", (event) => {
             .getAll("sharedFiles")
             .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
 
-          await saveSharedFiles(files, {
+          const batchId = await saveSharedFiles(files, {
             title: formData.get("title"),
             text: formData.get("text"),
           });
 
-          const redirectUrl = `/share-target?t=${Date.now()}`;
+          const redirectUrl = `/share-target?batch=${encodeURIComponent(batchId || "")}&t=${Date.now()}`;
           event.waitUntil(focusOrOpenShareClient(redirectUrl));
 
           return Response.redirect(redirectUrl, 303);

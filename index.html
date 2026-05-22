@@ -1499,7 +1499,7 @@
         });
       }
 
-      async function getSharedRecords() {
+      async function getSharedRecords(batchId = "") {
         if (!("indexedDB" in window)) return [];
         const db = await openShareDb();
         const records = await new Promise((resolve, reject) => {
@@ -1510,7 +1510,7 @@
         });
         db.close();
 
-        return records
+        const normalizedRecords = records
           .filter((record) => record.file && (record.file instanceof Blob || (typeof File !== 'undefined' && record.file instanceof File)))
           .map((record) => {
             const type = normalizeMimeType(record.name, record.type || record.file?.type);
@@ -1538,6 +1538,19 @@
 
             return { ...record, type };
           });
+
+        const targetBatchId =
+          batchId ||
+          normalizedRecords
+            .map((record) => record.batchId)
+            .filter(Boolean)
+            .toSorted()
+            .at(-1) ||
+          "";
+
+        return normalizedRecords
+          .filter((record) => !targetBatchId || record.batchId === targetBatchId)
+          .toSorted((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
       }
 
       async function clearSharedRecords(ids) {
@@ -1660,8 +1673,8 @@
         }
       }
 
-      async function uploadSharedRecords() {
-        const records = await getSharedRecords();
+      async function uploadSharedRecords(batchId = "") {
+        const records = await getSharedRecords(batchId);
         if (!records.length) return;
 
         setStatus("공유 파일 업로드 중");
@@ -1870,7 +1883,6 @@
           showApp();
           resetEditor();
           await loadAll();
-          await flushSharedRecords();
         } catch (error) {
           showToast(error.message);
         }
@@ -1976,7 +1988,10 @@
           if (session.authenticated) {
             showApp();
             await loadAll();
-            await flushSharedRecords();
+            if (params.has("shared_fallback")) {
+              await flushSharedRecords();
+              history.replaceState(null, "", window.location.pathname);
+            }
             if (params.has("shared_done")) {
               showToast("공유 파일을 저장했습니다.");
               history.replaceState(null, "", window.location.pathname);

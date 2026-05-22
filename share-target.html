@@ -226,7 +226,7 @@
         });
       }
 
-      async function getSharedRecords() {
+      async function getSharedRecords(batchId = "") {
         if (!("indexedDB" in window)) return [];
         const db = await openShareDb();
         const records = await new Promise((resolve, reject) => {
@@ -237,7 +237,7 @@
         });
         db.close();
 
-        return records
+        const normalizedRecords = records
           .filter((record) => record.file && (record.file instanceof Blob || (typeof File !== "undefined" && record.file instanceof File)))
           .map((record) => {
             const type = normalizeMimeType(record.name, record.type || record.file?.type);
@@ -265,6 +265,19 @@
 
             return { ...record, type };
           });
+
+        const targetBatchId =
+          batchId ||
+          normalizedRecords
+            .map((record) => record.batchId)
+            .filter(Boolean)
+            .toSorted()
+            .at(-1) ||
+          "";
+
+        return normalizedRecords
+          .filter((record) => !targetBatchId || record.batchId === targetBatchId)
+          .toSorted((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
       }
 
       async function clearSharedRecords(ids) {
@@ -359,8 +372,8 @@
         return data.file;
       }
 
-      async function uploadSharedRecords() {
-        const records = await getSharedRecords();
+      async function uploadSharedRecords(batchId) {
+        const records = await getSharedRecords(batchId);
         if (!records.length) {
           setStatus("공유할 파일이 없어요", "새로 공유한 파일이 아직 없거나 이미 처리되었어요.", "홈으로 돌아갈게요.", 100);
           window.setTimeout(() => {
@@ -444,7 +457,7 @@
             return;
           }
 
-          await uploadSharedRecords();
+          await uploadSharedRecords(params.get("batch") || "");
         } catch (error) {
           $("retryButton").classList.remove("hidden");
           $("message").classList.add("error");
