@@ -8,6 +8,27 @@
   "background_color": "#f6f4ef",
   "theme_color": "#11685c",
   "orientation": "portrait",
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "sharedFiles",
+          "accept": [
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/svg+xml",
+            "application/pdf"
+          ]
+        }
+      ]
+    }
+  },
   "icons": [
     {
       "src": "/icons/icon-192.svg",
@@ -23,4 +44,3 @@
     }
   ]
 }
-

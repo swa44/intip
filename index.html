@@ -195,7 +195,16 @@
 
       .login-panel h1 {
         margin: 0 0 8px;
+        font-family:
+          "SF Pro Display",
+          "Segoe UI Variable Display",
+          "Segoe UI",
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
         font-size: 34px;
+        font-weight: 800;
         letter-spacing: 0;
       }
 
@@ -225,7 +234,16 @@
 
       .brand h1 {
         margin: 0;
+        font-family:
+          "SF Pro Display",
+          "Segoe UI Variable Display",
+          "Segoe UI",
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
         font-size: clamp(30px, 5vw, 48px);
+        font-weight: 800;
         line-height: 1;
         letter-spacing: 0;
       }
@@ -953,6 +971,8 @@
         previewImageId: null,
         noteQuery: "",
       };
+      const SHARE_DB = "intip-share-target";
+      const SHARE_STORE = "shared-files";
 
       const $ = (id) => document.getElementById(id);
       const isImage = (file) => String(file.type || "").startsWith("image/");
@@ -1422,6 +1442,44 @@
         setStatus("저장됨");
       }
 
+      function openShareDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(SHARE_DB, 1);
+
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function getSharedRecords() {
+        if (!("indexedDB" in window)) return [];
+        const db = await openShareDb();
+        const records = await new Promise((resolve, reject) => {
+          const transaction = db.transaction(SHARE_STORE, "readonly");
+          const request = transaction.objectStore(SHARE_STORE).getAll();
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return records.filter((record) => record.file instanceof File);
+      }
+
+      async function clearSharedRecords(ids) {
+        if (!ids.length || !("indexedDB" in window)) return;
+        const db = await openShareDb();
+        await new Promise((resolve, reject) => {
+          const transaction = db.transaction(SHARE_STORE, "readwrite");
+          const store = transaction.objectStore(SHARE_STORE);
+          ids.forEach((id) => store.delete(id));
+          transaction.oncomplete = () => resolve();
+          transaction.onerror = () => reject(transaction.error);
+        });
+        db.close();
+      }
+
       async function saveNote(event) {
         event.preventDefault();
         const title = $("noteTitle").value.trim() || "Untitled";
@@ -1515,6 +1573,45 @@
           showToast(`${uploaded}개를 업로드했습니다.`);
         } catch (error) {
           setStatus("업로드 실패");
+          hideProgress(0);
+          throw error;
+        }
+      }
+
+      async function uploadSharedRecords() {
+        const records = await getSharedRecords();
+        if (!records.length) return;
+
+        try {
+          setStatus("공유 파일 업로드 중");
+          let uploaded = 0;
+
+          for (const record of records) {
+            const file = record.file;
+            const expected = isImage(file) ? "image" : "file";
+            showProgress(`${file.name || record.name} 업로드 중`, 0);
+            const uploadedFile = await uploadOne(file, expected);
+            if (!state.files.some((item) => item.id === uploadedFile.id)) {
+              state.files.unshift(uploadedFile);
+            }
+            uploaded += 1;
+            setStatus(`${uploaded}/${records.length} 공유 파일 업로드`);
+          }
+
+          await clearSharedRecords(records.map((record) => record.id));
+          renderImages();
+          renderFiles();
+          setTab(records.every((record) => isImage(record.file)) ? "images" : "files");
+          setStatus("저장됨");
+          showProgress("공유 파일 업로드 완료", 100);
+          hideProgress();
+          showToast(`${uploaded}개 공유 파일을 업로드했습니다.`);
+
+          if (new URLSearchParams(window.location.search).has("shared")) {
+            history.replaceState(null, "", window.location.pathname);
+          }
+        } catch (error) {
+          setStatus("공유 파일 업로드 실패");
           hideProgress(0);
           throw error;
         }
@@ -1643,6 +1740,7 @@
           showApp();
           resetEditor();
           await loadAll();
+          await uploadSharedRecords();
         } catch (error) {
           showToast(error.message);
         }
@@ -1741,6 +1839,7 @@
           if (session.authenticated) {
             showApp();
             await loadAll();
+            await uploadSharedRecords();
           } else {
             showLogin();
           }
