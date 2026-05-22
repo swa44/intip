@@ -1596,11 +1596,12 @@
         const records = await getSharedRecords();
         if (!records.length) return;
 
-        try {
-          setStatus("공유 파일 업로드 중");
-          let uploaded = 0;
+        setStatus("공유 파일 업로드 중");
+        let uploaded = 0;
+        const succeededIds = [];
 
-          for (const record of records) {
+        for (const record of records) {
+          try {
             const file = record.file;
             const expected = isImage(file) ? "image" : "file";
             showProgress(`${file.name || record.name} 업로드 중`, 0);
@@ -1609,25 +1610,42 @@
               state.files.unshift(uploadedFile);
             }
             uploaded += 1;
+            succeededIds.push(record.id);
             setStatus(`${uploaded}/${records.length} 공유 파일 업로드`);
+          } catch (fileError) {
+            console.error("Failed to upload shared record:", record, fileError);
+            showToast(`업로드 실패 (${record.name || '공유 파일'}): ${fileError.message}`);
+            // Clear even failed records to prevent them from locking the IndexedDB queue permanently
+            succeededIds.push(record.id);
           }
+        }
 
-          await clearSharedRecords(records.map((record) => record.id));
+        try {
+          if (succeededIds.length) {
+            await clearSharedRecords(succeededIds);
+          }
           renderImages();
           renderFiles();
-          setTab(records.every((record) => isImage(record.file)) ? "images" : "files");
+          
+          const successfulFiles = records.filter(r => succeededIds.includes(r.id)).map(r => r.file);
+          if (successfulFiles.length) {
+            setTab(successfulFiles.every((file) => isImage(file)) ? "images" : "files");
+          }
+          
           setStatus("저장됨");
           showProgress("공유 파일 업로드 완료", 100);
           hideProgress();
-          showToast(`${uploaded}개 공유 파일을 업로드했습니다.`);
+          if (uploaded > 0) {
+            showToast(`${uploaded}개 공유 파일을 업로드했습니다.`);
+          }
 
           if (new URLSearchParams(window.location.search).has("shared")) {
             history.replaceState(null, "", window.location.pathname);
           }
         } catch (error) {
-          setStatus("공유 파일 업로드 실패");
+          setStatus("공유 파일 완료 처리 실패");
           hideProgress(0);
-          throw error;
+          console.error(error);
         }
       }
 
@@ -1848,6 +1866,13 @@
         }
 
         resetEditor();
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.has("shared_error")) {
+          showToast(`공유 파일 오류: ${params.get("shared_error")}`);
+          history.replaceState(null, "", window.location.pathname);
+        }
+
         try {
           const session = await api("/api/session");
           if (session.authenticated) {

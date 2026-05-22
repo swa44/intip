@@ -63,17 +63,22 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname === "/share-target" && event.request.method === "POST") {
     event.respondWith(
       (async () => {
-        const formData = await event.request.formData();
-        const files = formData
-          .getAll("sharedFiles")
-          .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
+        try {
+          const formData = await event.request.formData();
+          const files = formData
+            .getAll("sharedFiles")
+            .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
 
-        await saveSharedFiles(files, {
-          title: formData.get("title"),
-          text: formData.get("text"),
-        });
+          await saveSharedFiles(files, {
+            title: formData.get("title"),
+            text: formData.get("text"),
+          });
 
-        return Response.redirect("/?shared=1", 303);
+          return Response.redirect("/?shared=1", 303);
+        } catch (error) {
+          console.error("Share target fetch error in service worker:", error);
+          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}`, 303);
+        }
       })(),
     );
     return;
