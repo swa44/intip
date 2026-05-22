@@ -19,11 +19,18 @@
         {
           "name": "sharedFiles",
           "accept": [
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "image/svg+xml",
-            "application/pdf"
+            "image/*",
+            "application/pdf",
+            ".pdf",
+            "text/*",
+            ".txt",
+            ".csv",
+            "application/zip",
+            ".zip",
+            ".docx",
+            ".xlsx",
+            ".pptx",
+            ".hwp"
           ]
         }
       ]

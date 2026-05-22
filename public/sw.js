@@ -66,7 +66,7 @@ self.addEventListener("fetch", (event) => {
         const formData = await event.request.formData();
         const files = formData
           .getAll("sharedFiles")
-          .filter((item) => item instanceof File && item.size > 0);
+          .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
 
         await saveSharedFiles(files, {
           title: formData.get("title"),

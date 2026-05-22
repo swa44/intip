@@ -1464,7 +1464,21 @@
           request.onerror = () => reject(request.error);
         });
         db.close();
-        return records.filter((record) => record.file instanceof File);
+
+        return records
+          .filter((record) => record.file && (record.file instanceof Blob || (typeof File !== 'undefined' && record.file instanceof File)))
+          .map((record) => {
+            if (typeof File !== 'undefined' && !(record.file instanceof File)) {
+              return {
+                ...record,
+                file: new File([record.file], record.name || 'shared-file', {
+                  type: record.type || record.file.type,
+                  lastModified: record.createdAt || Date.now()
+                })
+              };
+            }
+            return record;
+          });
       }
 
       async function clearSharedRecords(ids) {
