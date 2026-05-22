@@ -3,36 +3,6 @@ const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
 
-function shareRedirectHtml(targetUrl) {
-  const escapedUrl = JSON.stringify(targetUrl);
-  return `<!doctype html>
-<html lang="ko">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="robots" content="noindex,nofollow">
-    <title>intip 공유 연결 중</title>
-    <style>
-      body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f4ef;color:#202124;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-      main{padding:24px;text-align:center}
-      a{color:#11685c}
-    </style>
-  </head>
-  <body>
-    <main>
-      <p>공유 화면으로 이동 중입니다.</p>
-      <p><a id="link" href=${escapedUrl}>계속하기</a></p>
-    </main>
-    <script>
-      const targetUrl = ${escapedUrl};
-      const link = document.getElementById("link");
-      if (link) link.href = targetUrl;
-      window.location.replace(targetUrl);
-    </script>
-  </body>
-</html>`;
-}
-
 function openShareDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(SHARE_DB, 1);
@@ -46,10 +16,9 @@ function openShareDb() {
 }
 
 async function saveSharedFiles(files, meta = {}) {
-  if (!files.length) return null;
+  if (!files.length) return;
 
   const db = await openShareDb();
-  const batchId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(SHARE_STORE, "readwrite");
     const store = transaction.objectStore(SHARE_STORE);
@@ -62,7 +31,6 @@ async function saveSharedFiles(files, meta = {}) {
         name: file.name || `shared-${createdAt}-${index}`,
         type: file.type || "application/octet-stream",
         size: file.size || 0,
-        batchId,
         title: meta.title || "",
         text: meta.text || "",
         createdAt,
@@ -73,7 +41,29 @@ async function saveSharedFiles(files, meta = {}) {
     transaction.onerror = () => reject(transaction.error);
   });
   db.close();
-  return batchId;
+}
+
+async function focusOrOpenShareClient(targetUrl) {
+  const windowClients = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+
+  for (const client of windowClients) {
+    const clientUrl = new URL(client.url);
+    if (clientUrl.origin !== self.location.origin) continue;
+
+    if ("focus" in client) {
+      await client.focus();
+    }
+    // No client.navigate() — the 303 redirect already navigates the window.
+    // No postMessage — triggers a flush on the old page instance while the
+    // redirect is loading a new instance, causing double uploads.
+    return true;
+  }
+
+  const opened = await self.clients.openWindow(targetUrl);
+  return !!opened;
 }
 
 self.addEventListener("install", (event) => {
@@ -97,35 +87,25 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         try {
-          const clonedReq = event.request.clone();
-          const formData = await clonedReq.formData();
+          const formData = await event.request.formData();
           const files = formData
             .getAll("sharedFiles")
             .filter((item) => (item instanceof Blob || (typeof File !== "undefined" && item instanceof File)) && item.size > 0);
 
-          const batchId = await saveSharedFiles(files, {
+          await saveSharedFiles(files, {
             title: formData.get("title"),
             text: formData.get("text"),
           });
 
-          const redirectUrl = `/share-target?batch=${encodeURIComponent(batchId || "")}&t=${Date.now()}`;
-          return new Response(shareRedirectHtml(redirectUrl), {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "no-store",
-            },
-          });
+          const redirectUrl = `/?shared=1&t=${Date.now()}`;
+          event.waitUntil(focusOrOpenShareClient(redirectUrl));
+
+          // Web Share Target spec requires a redirect response (not HTML+JS).
+          // Returning HTML breaks script execution on some Android WebViews.
+          return Response.redirect(redirectUrl, 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
-          const errorUrl = `/share-target?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`;
-          return new Response(shareRedirectHtml(errorUrl), {
-            status: 200,
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-              "Cache-Control": "no-store",
-            },
-          });
+          return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}&t=${Date.now()}`, 303);
         }
       })(),
     );
@@ -133,7 +113,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) return;
-  if (url.pathname === "/share-target") return;
   if (event.request.method !== "GET") return;
 
   event.respondWith(
