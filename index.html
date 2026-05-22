@@ -975,6 +975,7 @@
       const SHARE_STORE = "shared-files";
       let sharedUploadInFlight = null;
       let sharedUploadQueued = false;
+      let sharedFlushTimer = null;
 
       const $ = (id) => document.getElementById(id);
       const isImage = (file) => String(file.type || "").startsWith("image/");
@@ -1669,6 +1670,23 @@
         return sharedUploadInFlight;
       }
 
+      function scheduleSharedFlush() {
+        const delays = [0, 350, 1000, 2200];
+
+        window.clearTimeout(sharedFlushTimer);
+        for (const delay of delays) {
+          window.setTimeout(() => {
+            if ($("appView").style.display === "block") {
+              flushSharedRecords().catch((error) => console.error(error));
+            }
+          }, delay);
+        }
+
+        sharedFlushTimer = window.setTimeout(() => {
+          sharedFlushTimer = null;
+        }, Math.max(...delays) + 50);
+      }
+
       function fileFromClipboardItem(item, index) {
         const file = item.getAsFile();
         if (!file) return null;
@@ -1902,6 +1920,9 @@
             showApp();
             await loadAll();
             await flushSharedRecords();
+            if (params.has("shared")) {
+              scheduleSharedFlush();
+            }
           } else {
             showLogin();
           }
@@ -1913,26 +1934,26 @@
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.addEventListener("message", (event) => {
           if (event.data?.type === "shared-files-received" && $("appView").style.display === "block") {
-            flushSharedRecords().catch((error) => console.error(error));
+            scheduleSharedFlush();
           }
         });
       }
 
       window.addEventListener("focus", () => {
         if ($("appView").style.display === "block") {
-          flushSharedRecords().catch((error) => console.error(error));
+          scheduleSharedFlush();
         }
       });
 
       window.addEventListener("pageshow", () => {
         if ($("appView").style.display === "block") {
-          flushSharedRecords().catch((error) => console.error(error));
+          scheduleSharedFlush();
         }
       });
 
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden && $("appView").style.display === "block") {
-          flushSharedRecords().catch((error) => console.error(error));
+          scheduleSharedFlush();
         }
       });
     </script>

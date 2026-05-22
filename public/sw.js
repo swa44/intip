@@ -2,7 +2,9 @@ const CACHE_NAME = "intip-shell-v1";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
 const SHARE_DB = "intip-share-target";
 const SHARE_STORE = "shared-files";
-const SHARE_URL = "/?shared=1";
+function shareUrl() {
+  return `/?shared=${Date.now()}`;
+}
 
 function openShareDb() {
   return new Promise((resolve, reject) => {
@@ -45,6 +47,7 @@ async function saveSharedFiles(files, meta = {}) {
 }
 
 async function focusOrOpenShareClient() {
+  const targetUrl = shareUrl();
   const windowClients = await self.clients.matchAll({
     type: "window",
     includeUncontrolled: true,
@@ -58,13 +61,13 @@ async function focusOrOpenShareClient() {
       await client.focus();
     }
     if ("navigate" in client) {
-      await client.navigate(SHARE_URL);
+      await client.navigate(targetUrl);
     }
     client.postMessage({ type: "shared-files-received" });
     return true;
   }
 
-  const opened = await self.clients.openWindow(SHARE_URL);
+  const opened = await self.clients.openWindow(targetUrl);
   if (opened) {
     opened.postMessage({ type: "shared-files-received" });
     return true;
@@ -104,7 +107,7 @@ self.addEventListener("fetch", (event) => {
           });
           event.waitUntil(focusOrOpenShareClient());
 
-          return Response.redirect(SHARE_URL, 303);
+          return Response.redirect(shareUrl(), 303);
         } catch (error) {
           console.error("Share target fetch error in service worker:", error);
           return Response.redirect(`/?shared_error=${encodeURIComponent(error.message || "unknown")}`, 303);
