@@ -1684,9 +1684,8 @@
         for (const record of records) {
           try {
             const file = record.file;
-            const expected = isImage(file) ? "image" : "file";
             showProgress(`${file.name || record.name} 업로드 중`, 0);
-            const uploadedFile = await uploadOne(file, expected);
+            const uploadedFile = await uploadOne(file, "shared");
             if (!state.files.some((item) => item.id === uploadedFile.id)) {
               state.files.unshift(uploadedFile);
             }
@@ -1708,9 +1707,8 @@
           renderImages();
           renderFiles();
           
-          const successfulFiles = records.filter(r => succeededIds.includes(r.id)).map(r => r.file);
-          if (successfulFiles.length) {
-            setTab(successfulFiles.every((file) => isImage(file)) ? "images" : "files");
+          if (records.some((record) => succeededIds.includes(record.id))) {
+            setTab("files");
           }
           
           setStatus("저장됨");
