@@ -1137,6 +1137,7 @@ const IMAGE_EXTENSIONS = new Set([
       }
 
       function resetEditor() {
+        window.clearTimeout(autoSaveTimer);
         state.currentNoteId = null;
         $("noteTitle").value = "";
         $("noteBody").innerHTML = "";
@@ -1484,20 +1485,19 @@ const IMAGE_EXTENSIONS = new Set([
       }
 
 
-async function saveNote(event) {
-        event.preventDefault();
+      let autoSaveTimer = null;
+
+      async function saveNoteCore(silent = false) {
         const title = $("noteTitle").value.trim() || "Untitled";
         const bodyHtml = $("noteBody").innerHTML.trim();
         const body = $("noteBody").innerText.trim();
+
+        if (!body && !bodyHtml && !state.currentNoteId) return;
+
         setStatus("저장 중");
         const data = await api("/api/notes", {
           method: "POST",
-          body: JSON.stringify({
-            id: state.currentNoteId,
-            title,
-            body,
-            bodyHtml,
-          }),
+          body: JSON.stringify({ id: state.currentNoteId, title, body, bodyHtml }),
         });
         const index = state.notes.findIndex((note) => note.id === data.note.id);
         if (index >= 0) state.notes[index] = data.note;
@@ -1506,7 +1506,29 @@ async function saveNote(event) {
         $("deleteNoteButton").disabled = false;
         renderNotes();
         setStatus("저장됨");
-        showToast("메모를 저장했습니다.");
+        if (!silent) showToast("메모를 저장했습니다.");
+      }
+
+      function scheduleAutoSave() {
+        const hasContent =
+          $("noteTitle").value.trim() ||
+          $("noteBody").innerText.trim() ||
+          state.currentNoteId;
+        if (!hasContent) return;
+
+        window.clearTimeout(autoSaveTimer);
+        autoSaveTimer = window.setTimeout(() => {
+          saveNoteCore(true).catch((err) => {
+            console.error("Auto-save failed:", err);
+            setStatus("저장 실패");
+          });
+        }, 800);
+      }
+
+      async function saveNote(event) {
+        event.preventDefault();
+        window.clearTimeout(autoSaveTimer);
+        await saveNoteCore(false);
       }
 
       async function deleteCurrentNote() {
@@ -1726,6 +1748,8 @@ function fileFromClipboardItem(item, index) {
       $("noteForm").addEventListener("submit", (event) =>
         saveNote(event).catch((error) => showToast(error.message)),
       );
+      $("noteTitle").addEventListener("input", scheduleAutoSave);
+      $("noteBody").addEventListener("input", scheduleAutoSave);
       $("deleteNoteButton").addEventListener("click", () =>
         deleteCurrentNote().catch((error) => showToast(error.message)),
       );
