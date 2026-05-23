@@ -971,9 +971,6 @@
         previewImageId: null,
         noteQuery: "",
       };
-      const SHARE_DB = "intip-share";
-      const SHARE_STORE = "pending";
-      let shareFlushInFlight = null;
 const IMAGE_EXTENSIONS = new Set([
         "png",
         "jpg",
@@ -1486,100 +1483,6 @@ const IMAGE_EXTENSIONS = new Set([
         setStatus("저장됨");
       }
 
-      function openShareDb() {
-        return new Promise((resolve, reject) => {
-          const req = indexedDB.open(SHARE_DB, 1);
-          req.onupgradeneeded = () => req.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      }
-
-      async function getSharedEntries() {
-        if (!("indexedDB" in window)) return [];
-        const db = await openShareDb();
-        const entries = await new Promise((resolve, reject) => {
-          const tx = db.transaction(SHARE_STORE, "readonly");
-          const req = tx.objectStore(SHARE_STORE).getAll();
-          req.onsuccess = () => resolve(req.result || []);
-          req.onerror = () => reject(req.error);
-        });
-        db.close();
-        return entries.toSorted((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
-      }
-
-      async function clearSharedEntries(ids) {
-        if (!ids.length || !("indexedDB" in window)) return;
-        const db = await openShareDb();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction(SHARE_STORE, "readwrite");
-          const store = tx.objectStore(SHARE_STORE);
-          ids.forEach((id) => store.delete(id));
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-        db.close();
-      }
-
-      async function flushSharedEntries() {
-        if (shareFlushInFlight) return shareFlushInFlight;
-
-        const doFlush = async () => {
-          const entries = await getSharedEntries();
-          if (!entries.length) return;
-
-          setStatus("공유 파일 업로드 중");
-          let uploaded = 0;
-          const doneIds = [];
-
-          for (const entry of entries) {
-            try {
-              const type = normalizeMimeType(entry.name, entry.type);
-              const file = new File([entry.bytes], entry.name, {
-                type,
-                lastModified: entry.createdAt || Date.now(),
-              });
-              showProgress(`${file.name} 업로드 중`, 0);
-              const result = await uploadOne(file, "shared");
-              if (!state.files.some((f) => f.id === result.id)) {
-                state.files.unshift(result);
-              }
-              doneIds.push(entry.id);
-              uploaded++;
-              setStatus(`${uploaded}/${entries.length} 업로드`);
-            } catch (err) {
-              console.error("공유 파일 업로드 실패:", entry.name, err);
-              showToast(`업로드 실패 (${entry.name}): ${err.message}`);
-              doneIds.push(entry.id);
-            }
-          }
-
-          await clearSharedEntries(doneIds);
-          renderImages();
-          renderFiles();
-
-          if (uploaded > 0) {
-            const uploadedEntries = entries.filter((e) => doneIds.includes(e.id));
-            setTab(uploadedEntries.every((e) => isImage({ name: e.name, type: e.type })) ? "images" : "files");
-            showProgress("업로드 완료", 100);
-            hideProgress();
-            showToast(`${uploaded}개 파일을 저장했습니다.`);
-          } else {
-            hideProgress(0);
-          }
-          setStatus("저장됨");
-        };
-
-        shareFlushInFlight = (
-          typeof navigator.locks?.request === "function"
-            ? navigator.locks.request("intip-share-flush", { mode: "exclusive" }, doFlush)
-            : doFlush()
-        ).finally(() => {
-          shareFlushInFlight = null;
-        });
-
-        return shareFlushInFlight;
-      }
 
 async function saveNote(event) {
         event.preventDefault();
@@ -1912,9 +1815,17 @@ function fileFromClipboardItem(item, index) {
           if (session.authenticated) {
             showApp();
             await loadAll();
-            if (params.has("shared")) {
+            if (params.has("shared_done")) {
               history.replaceState(null, "", window.location.pathname);
-              await flushSharedEntries();
+              showToast("공유 파일을 저장했습니다.");
+            }
+            if (params.has("share_auth")) {
+              history.replaceState(null, "", window.location.pathname);
+              showToast("공유하려면 먼저 로그인하세요.");
+            }
+            if (params.has("share_retry")) {
+              history.replaceState(null, "", window.location.pathname);
+              showToast("앱이 준비됐습니다. 다시 공유해주세요.");
             }
           } else {
             showLogin();

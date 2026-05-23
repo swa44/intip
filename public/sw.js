@@ -1,54 +1,40 @@
-const CACHE_NAME = "intip-shell-v2";
+const CACHE_NAME = "intip-shell-v3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.svg", "/icons/icon-512.svg"];
-const SHARE_DB = "intip-share";
-const SHARE_STORE = "pending";
 
-function openShareDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(SHARE_DB, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(SHARE_STORE, { keyPath: "id" });
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+// Upload one file to R2 using the existing presigned-URL flow.
+// This runs entirely within the SW — no Vercel body-size limit applies because
+// the file goes directly from the device to R2 (only the metadata JSON hits Vercel).
+async function uploadToR2Direct(file) {
+  const type = file.type || "application/octet-stream";
+
+  const signRes = await fetch("/api/files", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "upload-url",
+      name: file.name || "shared-file",
+      type,
+      size: file.size,
+    }),
   });
-}
+  if (!signRes.ok) throw new Error(`presign 실패 (${signRes.status})`);
+  const signed = await signRes.json();
 
-async function saveSharedFiles(files, meta = {}) {
-  if (!files.length) return;
-
-  // Read each file's bytes eagerly while share permissions are still valid.
-  // Use allSettled so a single unreadable file doesn't abort the whole batch.
-  const results = await Promise.allSettled(
-    files.map(async (file, i) => {
-      const bytes = await file.arrayBuffer();
-      const createdAt = Date.now();
-      return {
-        id: `${createdAt}-${i}-${Math.random().toString(36).slice(2)}`,
-        bytes,
-        name: file.name || `shared-file-${i}`,
-        type: file.type || "application/octet-stream",
-        size: bytes.byteLength,
-        title: meta.title || "",
-        text: meta.text || "",
-        createdAt,
-      };
-    })
-  );
-
-  const entries = results
-    .filter((r) => r.status === "fulfilled")
-    .map((r) => r.value);
-
-  if (!entries.length) return;
-
-  const db = await openShareDb();
-  await new Promise((resolve, reject) => {
-    const tx = db.transaction(SHARE_STORE, "readwrite");
-    const store = tx.objectStore(SHARE_STORE);
-    entries.forEach((entry) => store.put(entry));
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  const putRes = await fetch(signed.uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": type },
   });
-  db.close();
+  if (!putRes.ok) throw new Error(`R2 업로드 실패 (${putRes.status})`);
+
+  const completeRes = await fetch("/api/files", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "complete", file: signed.file }),
+  });
+  if (!completeRes.ok) throw new Error(`완료 처리 실패 (${completeRes.status})`);
 }
 
 self.addEventListener("install", (event) => {
@@ -71,38 +57,30 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname === "/share-target" && event.request.method === "POST") {
     event.respondWith(
       (async () => {
-        const redirectUrl = `/?shared=1&t=${Date.now()}`;
+        const doneUrl = `/?shared_done=1&t=${Date.now()}`;
         try {
-          let files = [];
-          let meta = {};
+          const formData = await event.request.formData();
+          const files = formData
+            .getAll("sharedFiles")
+            .filter((item) => item instanceof Blob && item.size > 0);
 
-          try {
-            const formData = await event.request.formData();
-            files = formData
-              .getAll("sharedFiles")
-              .filter((item) => item instanceof Blob && item.size > 0);
-            meta = {
-              title: formData.get("title") || "",
-              text: formData.get("text") || "",
-            };
-          } catch (formErr) {
-            // formData() failed — body may be unreadable (e.g. expired content URI).
-            // Redirect normally; the app will open without files.
-            console.error("[SW] formData() failed:", formErr);
-            return Response.redirect(redirectUrl, 303);
-          }
-
-          await saveSharedFiles(files, meta);
+          // Upload each file directly to R2 — no file-size limit
+          const results = await Promise.allSettled(files.map((f) => uploadToR2Direct(f)));
+          results.forEach((r, i) => {
+            if (r.status === "rejected") console.error(`[SW] file ${i} failed:`, r.reason);
+          });
         } catch (err) {
+          // formData() itself failed — server-side fallback will handle this
+          // via pages/share-target.js when the SW wasn't active (cold start)
           console.error("[SW] share-target error:", err);
         }
-
-        return Response.redirect(redirectUrl, 303);
+        return Response.redirect(doneUrl, 303);
       })(),
     );
     return;
   }
 
+  // Let all other non-GET requests (and /api/ calls) go to the network
   if (url.pathname.startsWith("/api/")) return;
   if (event.request.method !== "GET") return;
 
