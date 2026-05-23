@@ -414,6 +414,16 @@
         background: var(--soft);
       }
 
+      .note-item.locked {
+        border-color: #d1cbc0;
+        background: #fbfaf8;
+      }
+
+      .note-item.locked:hover {
+        border-color: #b9b1a5;
+        background: #f7f6f2;
+      }
+
       .item-top {
         display: flex;
         align-items: flex-start;
@@ -1141,7 +1151,7 @@ const IMAGE_EXTENSIONS = new Set([
         state.currentNoteId = null;
         $("noteTitle").value = "";
         $("noteBody").innerHTML = "";
-        $("deleteNoteButton").disabled = true;
+        setEditorReadOnly(false);
       }
 
       function openNote(id) {
@@ -1150,7 +1160,7 @@ const IMAGE_EXTENSIONS = new Set([
         state.currentNoteId = note.id;
         $("noteTitle").value = note.title;
         $("noteBody").innerHTML = note.bodyHtml || textToHtml(note.body || "");
-        $("deleteNoteButton").disabled = false;
+        setEditorReadOnly(note.locked);
         setTab("notes");
       }
 
@@ -1292,7 +1302,7 @@ const IMAGE_EXTENSIONS = new Set([
 
         for (const note of notes) {
           const item = document.createElement("div");
-          item.className = `item note-item${note.pinned ? " pinned" : ""}`;
+          item.className = `item note-item${note.pinned ? " pinned" : ""}${note.locked ? " locked" : ""}`;
           item.tabIndex = 0;
           item.innerHTML = `
             <div class="item-top">
@@ -1301,6 +1311,9 @@ const IMAGE_EXTENSIONS = new Set([
                 <div class="meta">${formatDate(note.updatedAt)}</div>
               </div>
               <div class="mini-actions">
+                <button class="icon" data-lock type="button" title="${note.locked ? "잠금 해제" : "메모 잠금"}">
+                  ${note.locked ? "🔒" : "🔓"}
+                </button>
                 <button class="icon" data-pin type="button" title="${note.pinned ? "고정 해제" : "상단 고정"}">
                   ${note.pinned ? "★" : "☆"}
                 </button>
@@ -1309,6 +1322,12 @@ const IMAGE_EXTENSIONS = new Set([
           `;
           item.querySelector(".item-title").textContent =
             note.title || "Untitled";
+          item
+            .querySelector("[data-lock]")
+            .addEventListener("click", (event) => {
+              event.stopPropagation();
+              toggleNoteLock(note.id).catch((error) => showToast(error.message));
+            });
           item
             .querySelector("[data-pin]")
             .addEventListener("click", (event) => {
@@ -1345,6 +1364,52 @@ const IMAGE_EXTENSIONS = new Set([
         showToast(
           data.note.pinned ? "상단에 고정했습니다." : "고정을 해제했습니다.",
         );
+      }
+
+      async function toggleNoteLock(id) {
+        const note = state.notes.find((item) => item.id === id);
+        if (!note) return;
+
+        const nextLocked = !note.locked;
+        const data = await api("/api/notes", {
+          method: "POST",
+          body: JSON.stringify({
+            ...note,
+            locked: nextLocked,
+          }),
+        });
+
+        const index = state.notes.findIndex((item) => item.id === id);
+        if (index >= 0) state.notes[index] = data.note;
+        renderNotes();
+
+        if (state.currentNoteId === id) {
+          setEditorReadOnly(data.note.locked);
+        }
+
+        showToast(
+          data.note.locked ? "메모를 잠갔습니다." : "메모 잠금을 해제했습니다.",
+        );
+      }
+
+      function setEditorReadOnly(isLocked) {
+        $("noteTitle").readOnly = isLocked;
+        $("noteBody").contentEditable = isLocked ? "false" : "true";
+
+        const submitBtn = $("noteForm").querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.disabled = isLocked;
+        }
+
+        if (state.currentNoteId) {
+          $("deleteNoteButton").disabled = isLocked;
+        }
+
+        const toolbar = $("noteForm").querySelector(".editor-toolbar");
+        if (toolbar) {
+          toolbar.style.pointerEvents = isLocked ? "none" : "auto";
+          toolbar.style.opacity = isLocked ? "0.4" : "1";
+        }
       }
 
       function fileActions(file) {
@@ -1488,6 +1553,14 @@ const IMAGE_EXTENSIONS = new Set([
       let autoSaveTimer = null;
 
       async function saveNoteCore(silent = false) {
+        if (state.currentNoteId) {
+          const currentNote = state.notes.find((note) => note.id === state.currentNoteId);
+          if (currentNote?.locked) {
+            if (!silent) showToast("잠겨 있는 메모는 수정할 수 없습니다.");
+            return;
+          }
+        }
+
         const title = $("noteTitle").value.trim() || "Untitled";
         const bodyHtml = $("noteBody").innerHTML.trim();
         const body = $("noteBody").innerText.trim();
@@ -1533,6 +1606,11 @@ const IMAGE_EXTENSIONS = new Set([
 
       async function deleteCurrentNote() {
         if (!state.currentNoteId) return;
+        const currentNote = state.notes.find((note) => note.id === state.currentNoteId);
+        if (currentNote?.locked) {
+          showToast("잠겨 있는 메모는 삭제할 수 없습니다.");
+          return;
+        }
         if (!confirm("이 메모를 삭제할까요?")) return;
         await api(`/api/notes?id=${encodeURIComponent(state.currentNoteId)}`, {
           method: "DELETE",

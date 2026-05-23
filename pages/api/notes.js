@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       body: String(input.body || ""),
       bodyHtml: String(input.bodyHtml || ""),
       pinned: Boolean(input.pinned ?? (existing >= 0 ? notes[existing].pinned : false)),
+      locked: Boolean(input.locked ?? (existing >= 0 ? notes[existing].locked : false)),
       createdAt: existing >= 0 ? notes[existing].createdAt : now,
       updatedAt: now,
     };
