@@ -893,6 +893,7 @@
             <div class="panel-head">
               <h2>이미지</h2>
               <span class="meta" id="imageCount">0개</span>
+              <button class="ghost" id="downloadAllButton" type="button" style="margin-left:auto;font-size:13px;padding:6px 12px;">↓ 전체 다운로드</button>
             </div>
             <div class="upload-panel">
               <label class="dropzone" id="imageDropzone" for="imageInput">
@@ -1461,6 +1462,31 @@ const IMAGE_EXTENSIONS = new Set([
         window.location.href = `/api/download?id=${encodeURIComponent(state.previewImageId)}`;
       }
 
+      async function downloadAllImages() {
+        const images = storedImages();
+        if (!images.length) return;
+        const btn = $("downloadAllButton");
+        btn.disabled = true;
+        for (let i = 0; i < images.length; i++) {
+          btn.textContent = `↓ ${i + 1}/${images.length} 다운로드 중...`;
+          try {
+            const res = await fetch(`/api/download?id=${encodeURIComponent(images[i].id)}`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = images[i].name;
+            a.click();
+            URL.revokeObjectURL(url);
+          } catch (e) {
+            console.error("다운로드 실패:", images[i].name, e);
+          }
+          await new Promise(r => setTimeout(r, 400));
+        }
+        btn.disabled = false;
+        btn.textContent = "↓ 전체 다운로드";
+      }
+
       async function deletePreviewImage() {
         if (!state.previewImageId) return;
         const id = state.previewImageId;
@@ -1471,6 +1497,7 @@ const IMAGE_EXTENSIONS = new Set([
       function renderImages() {
         const list = $("imagesList");
         const images = storedImages();
+        $("downloadAllButton").style.display = images.length ? "" : "none";
         list.innerHTML = "";
         if (!images.length) {
           list.innerHTML = '<div class="empty">아직 이미지가 없습니다.</div>';
@@ -1862,6 +1889,7 @@ function fileFromClipboardItem(item, index) {
       });
       $("modalCloseButton").addEventListener("click", closeImagePreview);
       $("modalDownloadButton").addEventListener("click", downloadPreviewImage);
+      $("downloadAllButton").addEventListener("click", () => downloadAllImages().catch(e => showToast(e.message)));
       $("modalDeleteButton").addEventListener("click", () =>
         deletePreviewImage().catch((error) => showToast(error.message)),
       );
