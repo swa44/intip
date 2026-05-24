@@ -894,6 +894,7 @@
               <h2>이미지</h2>
               <span class="meta" id="imageCount">0개</span>
               <button class="ghost" id="downloadAllButton" type="button" style="margin-left:auto;font-size:13px;padding:6px 12px;">↓ 전체 다운로드</button>
+              <button class="danger" id="deleteAllButton" type="button" style="font-size:13px;padding:6px 12px;">전체 삭제</button>
             </div>
             <div class="upload-panel">
               <label class="dropzone" id="imageDropzone" for="imageInput">
@@ -1462,6 +1463,28 @@ const IMAGE_EXTENSIONS = new Set([
         window.location.href = `/api/download?id=${encodeURIComponent(state.previewImageId)}`;
       }
 
+      async function deleteAllImages() {
+        const images = storedImages();
+        if (!images.length) return;
+        if (!confirm(`이미지 ${images.length}개를 모두 삭제할까요?`)) return;
+        const btn = $("deleteAllButton");
+        btn.disabled = true;
+        for (let i = 0; i < images.length; i++) {
+          btn.textContent = `${i + 1}/${images.length} 삭제 중...`;
+          try {
+            await api(`/api/files?id=${encodeURIComponent(images[i].id)}`, { method: "DELETE" });
+            state.files = state.files.filter(f => f.id !== images[i].id);
+          } catch (e) {
+            console.error("삭제 실패:", images[i].name, e);
+          }
+        }
+        renderImages();
+        renderFiles();
+        btn.disabled = false;
+        btn.textContent = "전체 삭제";
+        showToast("이미지를 모두 삭제했습니다.");
+      }
+
       async function downloadAllImages() {
         const images = storedImages();
         if (!images.length) return;
@@ -1498,6 +1521,7 @@ const IMAGE_EXTENSIONS = new Set([
         const list = $("imagesList");
         const images = storedImages();
         $("downloadAllButton").style.display = images.length ? "" : "none";
+        $("deleteAllButton").style.display = images.length ? "" : "none";
         list.innerHTML = "";
         if (!images.length) {
           list.innerHTML = '<div class="empty">아직 이미지가 없습니다.</div>';
@@ -1890,6 +1914,7 @@ function fileFromClipboardItem(item, index) {
       $("modalCloseButton").addEventListener("click", closeImagePreview);
       $("modalDownloadButton").addEventListener("click", downloadPreviewImage);
       $("downloadAllButton").addEventListener("click", () => downloadAllImages().catch(e => showToast(e.message)));
+      $("deleteAllButton").addEventListener("click", () => deleteAllImages().catch(e => showToast(e.message)));
       $("modalDeleteButton").addEventListener("click", () =>
         deletePreviewImage().catch((error) => showToast(error.message)),
       );
