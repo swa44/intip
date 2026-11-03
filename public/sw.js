@@ -82,6 +82,7 @@ self.addEventListener("fetch", (event) => {
 
   // Let all other non-GET requests (and /api/ calls) go to the network
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/s/")) return; // public share links → always network
   if (event.request.method !== "GET") return;
 
   event.respondWith(
