@@ -48,6 +48,9 @@ const HTML = `<!doctype html>
   h2 { font-size:15px; margin:0 0 12px; }
   input[type=range] { width:100%; accent-color:var(--accent); }
   .empty { color:var(--muted); font-size:14px; }
+  .sizer { display:flex; gap:10px; align-items:center; }
+  .sizer input { flex:1; }
+  .ghost.on { background:var(--soft); border-color:var(--accent); color:var(--accent-dark); }
 </style>
 </head>
 <body>
@@ -66,6 +69,11 @@ const HTML = `<!doctype html>
       <textarea id="text" maxlength="300" placeholder="시계에 띄울 말을 적어주세요"></textarea>
       <label class="f">배경</label>
       <div class="swatches" id="themes"></div>
+      <label class="f" for="size">글자 크기 <span id="sizeLabel">자동</span></label>
+      <div class="sizer">
+        <input type="range" id="size" min="14" max="110" step="2" value="60">
+        <button type="button" class="ghost" id="sizeAuto">자동</button>
+      </div>
     </div>
 
     <div id="tab-photo" hidden>
@@ -116,7 +124,7 @@ const THEMES = [   // 백라이트 LCD라 밝은 배경은 눈부심 → 어두�
   { bg: ["#020f0c", "#0d3a33"], fg: "#e7fff8" },
   { bg: ["#140804", "#4a220e"], fg: "#ffe9c7" },
 ];
-let tab = "text", theme = 0, photo = null;
+let tab = "text", theme = 0, photo = null, manualSize = 0; // 0 = 자동
 
 const $ = (id) => document.getElementById(id);
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -155,8 +163,11 @@ function wrap(text, size, maxW) {
   return lines;
 }
 
-function fitText(text, box) {
-  for (let size = 76; size >= 14; size -= 2) {
+function fitText(text, box, fixed) {
+  if (fixed) {   // 사용자가 정한 크기: 넘쳐도 그대로 (미리보기로 확인)
+    return { size: fixed, lines: wrap(text, fixed, box.w), lh: Math.round(fixed * 1.28) };
+  }
+  for (let size = 110; size >= 14; size -= 2) {
     const lines = wrap(text, size, box.w);
     const lh = Math.round(size * 1.28);
     if (lines.length * lh <= box.h) return { size, lines, lh };
@@ -184,7 +195,10 @@ function render() {
     ctx.fillRect(0, 0, W, W);
     const text = $("text").value.trim() || "메시지를 입력하세요";
     const bottom = sender ? 34 : 14;
-    drawLines(fitText(text, { w: W - 28, h: W - 14 - bottom }), t.fg, W / 2, 14, W - 14 - bottom, false);
+    const fit = fitText(text, { w: W - 28, h: W - 14 - bottom }, manualSize);
+    drawLines(fit, t.fg, W / 2, 14, W - 14 - bottom, false);
+    if (!manualSize) { $("size").value = fit.size; }
+    $("sizeLabel").textContent = (manualSize ? fit.size + "px" : "자동 (" + fit.size + "px)") + (fit.lines.length > 1 ? " · " + fit.lines.length + "줄" : " · 한 줄");
     if (sender) { ctx.font = "600 16px " + FONT; ctx.globalAlpha = .75; ctx.fillStyle = t.fg; ctx.textAlign = "center"; ctx.fillText("— " + sender, W / 2, W - 20); ctx.globalAlpha = 1; }
   } else {
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, W);
@@ -288,6 +302,10 @@ $("photo").onchange = () => {
   img.src = URL.createObjectURL(f);
 };
 ["text", "caption", "sender"].forEach((id) => $(id).addEventListener("input", render));
+function setAuto(on) { $("sizeAuto").classList.toggle("on", on); }
+$("size").addEventListener("input", () => { manualSize = Number($("size").value); setAuto(false); render(); });
+$("sizeAuto").onclick = () => { manualSize = 0; setAuto(true); render(); };
+setAuto(true);
 
 (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(render);
 refresh();
