@@ -107,16 +107,16 @@ const W = 240;
 const view = document.getElementById("view");
 const ctx = view.getContext("2d");
 const FONT = '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif';
-const THEMES = [
-  { bg: ["#111111"], fg: "#ffffff" },
-  { bg: ["#0f3d36", "#11685c"], fg: "#ffffff" },
-  { bg: ["#1d2b64", "#5b3fa6"], fg: "#ffffff" },
-  { bg: ["#ff7a59", "#ffb347"], fg: "#1d1d1d" },
-  { bg: ["#ff5f8f", "#ffa3c1"], fg: "#ffffff" },
-  { bg: ["#fffaf1"], fg: "#202124" },
-  { bg: ["#ffd60a"], fg: "#111111" },
+const THEMES = [   // 백라이트 LCD라 밝은 배경은 눈부심 → 어두운 배경 위주
+  { bg: ["#000000"], fg: "#ffffff" },
+  { bg: ["#000000"], fg: "#ffd60a" },
+  { bg: ["#000000"], fg: "#5eead4" },
+  { bg: ["#000000"], fg: "#ff8fb1" },
+  { bg: ["#05081a", "#1a2456"], fg: "#ffffff" },
+  { bg: ["#020f0c", "#0d3a33"], fg: "#e7fff8" },
+  { bg: ["#140804", "#4a220e"], fg: "#ffe9c7" },
 ];
-let tab = "text", theme = 1, photo = null;
+let tab = "text", theme = 0, photo = null;
 
 const $ = (id) => document.getElementById(id);
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -125,7 +125,7 @@ $("sender").value = store.get("clock.sender") || "";
 THEMES.forEach((t, i) => {
   const b = document.createElement("button");
   b.type = "button"; b.className = "sw" + (i === theme ? " on" : "");
-  b.style.background = t.bg.length > 1 ? "linear-gradient(135deg," + t.bg.join(",") + ")" : t.bg[0];
+  b.style.background = t.bg.length > 1 ? "linear-gradient(135deg," + t.bg.join(",") + ")" : "radial-gradient(circle," + t.fg + " 0 28%," + t.bg[0] + " 30%)";
   b.onclick = () => { theme = i; document.querySelectorAll(".sw").forEach((s, j) => s.classList.toggle("on", j === i)); render(); };
   $("themes").appendChild(b);
 });
@@ -246,8 +246,8 @@ async function refresh() {
       $("clear").onclick = async () => { await api("DELETE"); refresh(); };
     } else { $("now").className = "empty"; $("now").textContent = "지금은 시계 화면이에요."; }
 
-    $("bri").value = data.brightness || 80;
-    $("briLabel").textContent = data.brightness ? data.brightness + "% (밤 23~7시는 자동으로 어둡게)" : "기본 80% (밤 23~7시는 자동으로 어둡게)";
+    $("bri").value = data.brightness || 45;
+    $("briLabel").textContent = data.brightness ? data.brightness + "% (밤 23~7시는 자동으로 어둡게)" : "기본 45% (밤 23~7시는 자동으로 어둡게)";
 
     const hist = data.history || [];
     $("hist").innerHTML = hist.length ? "" : '<li class="empty">아직 보낸 메시지가 없어요.</li>';
