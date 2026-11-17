@@ -66,7 +66,7 @@ const HTML = `<!doctype html>
 
     <div id="tab-text">
       <label class="f" for="text">내용</label>
-      <textarea id="text" maxlength="300" placeholder="시계에 띄울 말을 적어주세요"></textarea>
+      <textarea id="text" maxlength="300" placeholder="시계에 띄울 메모를 적어주세요"></textarea>
       <label class="f">배경</label>
       <div class="swatches" id="themes"></div>
       <label class="f" for="size">글자 크기 <span id="sizeLabel">자동</span></label>
@@ -86,11 +86,11 @@ const HTML = `<!doctype html>
       <div><label class="f" for="sender">보낸 사람 (선택)</label><input type="text" id="sender" maxlength="20" placeholder="이름"></div>
       <div><label class="f" for="secs">표시 시간</label>
         <select id="secs">
-          <option value="30">30초</option><option value="60">1분</option><option value="300" selected>5분</option>
-          <option value="1800">30분</option><option value="3600">1시간</option><option value="0">다음 메시지까지</option>
+          <option value="30">30초</option><option value="60">1분</option><option value="300">5분</option>
+          <option value="1800">30분</option><option value="3600">1시간</option><option value="0" selected>계속 (다음 반영까지)</option>
         </select></div>
     </div>
-    <button class="send" id="send" type="button">시계로 보내기</button>
+    <button class="send" id="send" type="button">반영하기</button>
     <div class="msg" id="status"></div>
   </section>
 
@@ -176,11 +176,11 @@ function fitText(text, box, fixed) {
   return { size: 14, lines: lines.slice(0, Math.floor(box.h / 18)), lh: 18 };
 }
 
-function drawLines(fit, fg, cx, top, h, shadow) {
+function drawLines(fit, fg, cx, top, h, shadow, left) {
   ctx.font = "700 " + fit.size + "px " + FONT;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = fg;
+  ctx.textAlign = left ? "left" : "center"; ctx.textBaseline = "middle"; ctx.fillStyle = fg;
   if (shadow) { ctx.shadowColor = "rgba(0,0,0,.65)"; ctx.shadowBlur = 6; }
-  let y = top + (h - fit.lines.length * fit.lh) / 2 + fit.lh / 2;
+  let y = left ? top + fit.lh / 2 : top + (h - fit.lines.length * fit.lh) / 2 + fit.lh / 2;   // 메모: 위에서부터
   for (const l of fit.lines) { ctx.fillText(l, cx, y); y += fit.lh; }
   ctx.shadowBlur = 0;
 }
@@ -193,10 +193,10 @@ function render() {
     if (t.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W, W); g.addColorStop(0, t.bg[0]); g.addColorStop(1, t.bg[1]); ctx.fillStyle = g; }
     else ctx.fillStyle = t.bg[0];
     ctx.fillRect(0, 0, W, W);
-    const text = $("text").value.trim() || "메시지를 입력하세요";
+    const text = $("text").value.replace(/\s+$/, "") || "메모를 입력하세요";
     const bottom = sender ? 34 : 14;
     const fit = fitText(text, { w: W - 28, h: W - 14 - bottom }, manualSize);
-    drawLines(fit, t.fg, W / 2, 14, W - 14 - bottom, false);
+    drawLines(fit, t.fg, 14, 14, W - 14 - bottom, false, true);   // 메모: 왼쪽 정렬
     if (!manualSize) { $("size").value = fit.size; }
     $("sizeLabel").textContent = (manualSize ? fit.size + "px" : "자동 (" + fit.size + "px)") + (fit.lines.length > 1 ? " · " + fit.lines.length + "줄" : " · 한 줄");
     if (sender) { ctx.font = "600 16px " + FONT; ctx.globalAlpha = .75; ctx.fillStyle = t.fg; ctx.textAlign = "center"; ctx.fillText("— " + sender, W / 2, W - 20); ctx.globalAlpha = 1; }
@@ -248,10 +248,30 @@ function fmtSecs(s) { return s < 0 ? "다음 메시지까지" : s >= 60 ? Math.c
 function fmtTime(iso) { const d = new Date(iso); return (d.getMonth() + 1) + "/" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
 
+let loaded = false;
+function loadCurrent(cur) {
+  if (loaded) return;
+  loaded = true;
+  if (!cur || cur.kind !== "text") return;
+  $("text").value = cur.text || "";
+  if (cur.sender !== undefined) $("sender").value = cur.sender || $("sender").value;
+  if (cur.style) {
+    if (Number.isInteger(cur.style.theme) && THEMES[cur.style.theme]) {
+      theme = cur.style.theme;
+      document.querySelectorAll(".sw").forEach((s, j) => s.classList.toggle("on", j === theme));
+    }
+    manualSize = Number(cur.style.size) || 0;
+    if (manualSize) $("size").value = manualSize;
+    setAuto(!manualSize);
+  }
+  render();
+}
+
 async function refresh() {
   try {
     const data = await api("GET");
     const cur = data.current;
+    loadCurrent(cur || (data.history || [])[0]);
     if (cur && data.remain !== 0) {
       $("now").className = "now";
       $("now").innerHTML = (cur.thumb ? '<img src="' + cur.thumb + '" alt="">' : "") +
@@ -280,13 +300,12 @@ $("send").onclick = async () => {
   const btn = $("send"), st = $("status");
   if (tab === "text" && !$("text").value.trim()) { st.className = "msg err"; st.textContent = "내용을 입력해주세요."; return; }
   if (tab === "photo" && !photo) { st.className = "msg err"; st.textContent = "사진을 골라주세요."; return; }
-  btn.disabled = true; st.className = "msg"; st.textContent = "보내는 중…";
+  btn.disabled = true; st.className = "msg"; st.textContent = "반영하는 중…";
   store.set("clock.sender", $("sender").value.trim());
   try {
     render();
-    await api("POST", { kind: tab, text: tab === "text" ? $("text").value.trim() : $("caption").value.trim(), sender: $("sender").value.trim(), seconds: Number($("secs").value), frame: toRGB565Base64(), thumb: thumb() });
-    st.textContent = "보냈어요. 10초 안에 시계에 표시돼요.";
-    if (tab === "text") $("text").value = "";
+    await api("POST", { kind: tab, text: tab === "text" ? $("text").value.replace(/\s+$/, "") : $("caption").value.trim(), sender: $("sender").value.trim(), seconds: Number($("secs").value), frame: toRGB565Base64(), thumb: thumb(), style: { theme, size: manualSize } });
+    st.textContent = "반영했어요. 10초 안에 시계에 표시돼요.";
     refresh();
   } catch (e) { st.className = "msg err"; st.textContent = e.message; }
   btn.disabled = false;

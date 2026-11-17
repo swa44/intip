@@ -47,6 +47,10 @@ export default async function handler(req, res) {
       kind: input.kind === "photo" ? "photo" : "text",
       text: String(input.text || "").slice(0, 300),
       sender: String(input.sender || "").slice(0, 40),
+      style: {
+        theme: Number.isInteger(input.style?.theme) && input.style.theme >= 0 && input.style.theme < 20 ? input.style.theme : 0,
+        size: Number.isInteger(input.style?.size) && input.style.size >= 14 && input.style.size <= 110 ? input.style.size : 0,
+      },
       thumb: /^data:image\/jpeg;base64,[A-Za-z0-9+/=]{1,40000}$/.test(input.thumb || "") ? input.thumb : "",
       createdAt: now.toISOString(),
       expiresAt: seconds > 0 ? new Date(now.getTime() + seconds * 1000).toISOString() : null,
