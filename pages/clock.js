@@ -16,6 +16,8 @@ const HTML = `<!doctype html>
   .head { display:flex; align-items:center; justify-content:space-between; }
   h1 { font-size:20px; margin:0; }
   .head a { color:var(--muted); font-size:14px; text-decoration:none; }
+  .head nav { display:flex; gap:8px; align-items:center; }
+  .head a.go { color:var(--ink); font-weight:700; background:#fff; border:1px solid rgba(0,0,0,.1); border-radius:999px; padding:7px 12px; }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:16px; box-shadow:0 18px 48px rgba(34,30,24,.08); }
   .preview { display:flex; justify-content:center; padding:14px; background:#1b1b1b; border-radius:16px; }
   canvas#view { width:min(100%, 288px); aspect-ratio:1; border-radius:6px; image-rendering:pixelated; background:#000; }
@@ -55,7 +57,7 @@ const HTML = `<!doctype html>
 </head>
 <body>
 <main>
-  <div class="head"><h1>시계 메시지</h1><a href="/">intip</a></div>
+  <div class="head"><h1>시계 메시지</h1><nav><a class="go" href="/4inch">4인치 메모 →</a><a href="/">intip</a></nav></div>
 
   <section class="card">
     <div class="preview"><canvas id="view" width="240" height="240"></canvas></div>
