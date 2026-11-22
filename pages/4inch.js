@@ -198,8 +198,9 @@ function render() {
     ctx.fillRect(0, 0, W, W);
     const text = $("text").value.replace(/\s+$/, "") || "메모를 입력하세요";
     const bottom = sender ? 68 : 28;
-    const fit = fitText(text, { w: W - 56, h: W - 28 - bottom }, manualSize);
-    drawLines(fit, t.fg, 28, 28, W - 28 - bottom, false, true);   // 메모: 왼쪽 정렬
+    const TOP = 50;   // 보드 오른쪽 위 작은 시계(높이 ~34px)와 안 겹치게
+    const fit = fitText(text, { w: W - 56, h: W - TOP - bottom }, manualSize);
+    drawLines(fit, t.fg, 28, TOP, W - TOP - bottom, false, true);   // 메모: 왼쪽 정렬
     if (!manualSize) { $("size").value = fit.size; }
     $("sizeLabel").textContent = (manualSize ? fit.size + "px" : "자동 (" + fit.size + "px)") + (fit.lines.length > 1 ? " · " + fit.lines.length + "줄" : " · 한 줄");
     if (sender) { ctx.font = "600 30px " + FONT; ctx.globalAlpha = .75; ctx.fillStyle = t.fg; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("— " + sender, W / 2, W - 40); ctx.globalAlpha = 1; }
